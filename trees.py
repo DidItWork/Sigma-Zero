@@ -56,10 +56,9 @@ class Node(ABC):
     @abstractmethod
     def getNextState(self) -> Node:
         """
-        Returns a node with a new state that is reachable from the current state
+        Returns a node with a random new state that is reachable from the current state
         and update children list with new state
 
-        Updates policy based on action taken
         """
 
         pass
@@ -87,7 +86,7 @@ class Node(ABC):
     @abstractmethod
     def explored(self) -> bool:
         """
-        Returns if the node has been fully explored
+        Returns if the node has been fully explored, no more children to be generated from getNextState
         """
 
         # TODO: How do you determine this? Is a node ever fully explored?
