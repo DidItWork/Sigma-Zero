@@ -57,7 +57,7 @@ class Node(ABC):
     def getNextState(self) -> Node:
         """
         Returns a node with a random new state that is reachable from the current state
-        and update children list with new state
+        that has not already been explored and update children list with new state
 
         """
 
