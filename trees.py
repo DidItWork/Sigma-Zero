@@ -8,7 +8,6 @@ import numpy as np
 Stores trees of different games
 """
 
-
 def board_to_tensor(board: chess.Board) -> np.ndarray:
     # Define a mapping from pieces to integers
     piece_to_int = {
