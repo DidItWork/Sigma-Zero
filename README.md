@@ -31,6 +31,6 @@ TODO
 
 The actions are represented with an 8x8x73 tensor which can be flattened into a 4672 vector. The planes of the tensor represent the location on the board from which the chess piece should be picked up from.
 
-- The first 8x7 channels/planes represent the number of squares to move (1 to 7) for the queen as well as the direction.
+- The first 8x7 channels/planes represent the number of squares to move (1 to 7) for the queen/rook/pawn/bishop/king as well as the direction. (Movement of pawn from 7th rank is assumed to be a promotion to queen)
 - The next 8 channels/planes represent the direction to move the knight
-- The last 9 channels represent the underpromotion of the 
+- The last 9 channels represent the underpromotion of the pawn to knight, bishop, and rook resp (through moving one step from the 7th rank or a diagonal capture from the 7th rank).
