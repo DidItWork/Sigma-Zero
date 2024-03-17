@@ -1,4 +1,4 @@
-# BetaZero
+# SigmaZero
 An implementation of Reinforcement Learning in game-playing according to Alpha Zero
 
 ## Logic
@@ -29,4 +29,8 @@ TODO
 
 ### Action Representation
 
-TODO
+The actions are represented with an 8x8x73 tensor which can be flattened into a 4672 vector. The planes of the tensor represent the location on the board from which the chess piece should be picked up from.
+
+- The first 8x7 channels/planes represent the number of squares to move (1 to 7) for the queen as well as the direction.
+- The next 8 channels/planes represent the direction to move the knight
+- The last 9 channels represent the underpromotion of the 
