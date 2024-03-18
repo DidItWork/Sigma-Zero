@@ -8,37 +8,6 @@ import numpy as np
 Stores trees of different games
 """
 
-
-def board_to_tensor(board: chess.Board) -> np.ndarray:
-    # Define a mapping from pieces to integers
-    piece_to_int = {
-        None: 0,
-        chess.PAWN: 1,
-        chess.KNIGHT: 2,
-        chess.BISHOP: 3,
-        chess.ROOK: 4,
-        chess.QUEEN: 5,
-        chess.KING: 6,
-    }
-
-    # Initialize an empty 8x8 tensor
-    tensor = np.zeros((8, 8), dtype=int)
-
-    # Fill the tensor with values based on the board state
-    for square in chess.SQUARES:
-        piece = board.piece_at(square)
-        if piece:
-            # Determine the value to assign (positive for white, negative for black)
-            value = piece_to_int[piece.piece_type]
-            if piece.color == chess.BLACK:
-                value = -value
-            # Assign the value to the tensor
-            row, col = divmod(square, 8)
-            tensor[row, col] = value
-
-    return tensor
-
-
 class Node(ABC):
 
     def __init__(self, s=None, p: Node = None) -> None:
@@ -47,6 +16,8 @@ class Node(ABC):
         self.W = 0.0
         self.N = 0
         self.parent = p
+
+        # TODO: Probably want to add the way that the state is added
 
         # Add the number of next moves possible
         self.policy = []
