@@ -178,8 +178,5 @@ class ChessNode(Node):
         Returns if the node is a terminal node (no children)
         """
         # Can use Outcome to give the reason for termination, the winner or None, and the result
-        if self.state.Outcome is not None:
-            return True
-        else:
-            return False
+        return self.state.is_game_over()
     
