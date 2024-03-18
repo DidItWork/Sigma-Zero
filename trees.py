@@ -173,10 +173,13 @@ class ChessNode(Node):
         # Node fully explored if all possible moves at 1 depth are exhausted? children == legal_moves?
         return len(self.children) == len(self.state.legal_moves)
 
-    def terminal(self) -> bool:
+    def terminal(self) -> chess.Color:
         """
-        Returns if the node is a terminal node (no children)
+        Returns if the node is a terminal node (no children) by giving winner's colour, else None if not terminal
         """
         # Can use Outcome to give the reason for termination, the winner or None, and the result
-        return self.state.is_game_over()
+        outcome = self.state.outcome()
+        if outcome is not None:
+            outcome = outcome.winner
+        return outcome
     
