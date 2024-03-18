@@ -129,36 +129,6 @@ class ChessTensor():
         return list(self.board.legal_moves)
     
 
-# chesser = ChessTensor()
-# move = chesser.get_moves()[0]
-
-board = chess.Board()
-move = list(board.legal_moves)[0]
-
-if board.is_capture(move):
-    print("what")
-else:
-    print("no)")
-
-if board.is_capture(move):
-    print("what")
-else:
-    print("no)")
-
-# import torch
-
-# # Example 2D tensor
-# tensor = torch.tensor([[[1, 2, 3],
-#                        [4, 5, 6],
-#                        [7, 8, 9]],
-#                        [[1, 2, 3],
-#                        [4, 5, 6],
-#                        [7, 8, 9]]])
-
-# # Flip the tensor vertically
-# vertical_flip = torch.flip(tensor, [0, 1])
-# # horizontal_flip = torch.flip(vertical_flip, [1])
-
-# print("Horizontally Flipped Tensor:\n", vertical_flip)
+chesser = ChessTensor()
 
 
