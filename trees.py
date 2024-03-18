@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
+from  copy import deepcopy
 from torch import tensor
 from __future__ import annotations
 import chess
 import numpy as np
 import random
+
 
 """
 Stores trees of different games
@@ -131,7 +133,8 @@ class ChessNode(Node):
         explored_move = random.choice(unexplored_moves)
         # TODO: are explored Nodes propagated and backpropped as well to be in the state?
         self.explored_moves.append(explored_move)
-        child = ChessNode(self.state.push(explored_move), self)
+        new_state = deepcopy(self.state)
+        child = ChessNode(new_state.push(explored_move), self)
         self.chilren.append(child)
         return child
         pass
@@ -174,6 +177,9 @@ class ChessNode(Node):
         """
         Returns if the node is a terminal node (no children)
         """
-
-        return len(self.policy) == 0
+        # Can use Outcome to give the reason for termination, the winner or None, and the result
+        if self.state.Outcome is not None:
+            return True
+        else:
+            return False
     
