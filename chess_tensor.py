@@ -78,7 +78,6 @@ class ChessTensor():
     
     def move_piece(self, move: chess.Move) -> torch.Tensor:
         # Moving the board forward
-        capture = self.board.is_capture(move)
         self.board.push(move)
 
         # Get board current state
@@ -106,11 +105,7 @@ class ChessTensor():
         white_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8)
         black_king_castling = torch.ones(1, 8, 8) if self.board.has_kingside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
         black_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
-
-        if capture:
-            no_progress = torch.zeros(1, 8, 8)
-        else:
-            no_progress = self.representation[-1] + 1
+        no_progress = torch.Tensor([self.board.halfmove_clock]).reshape(1, 1, 1).expand(1, 8, 8)
 
         L_tensor = torch.cat([color, total_moves, white_king_castling, white_queen_castling, black_king_castling, black_queen_castling, no_progress], 0)
 
@@ -129,6 +124,9 @@ class ChessTensor():
         return list(self.board.legal_moves)
     
 
-chesser = ChessTensor()
+# chesser = ChessTensor()
+
+
+
 
 
