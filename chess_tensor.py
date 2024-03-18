@@ -25,6 +25,9 @@ L = 7
 class ChessTensor():
     def __init__(self):
         self.__start_board()
+        self.M = 14
+        self.T = 8
+        self.L = 7
 
     # This is to get a single tensor representation of the board
     def __board_to_tensor(self) -> torch.Tensor:
@@ -54,7 +57,6 @@ class ChessTensor():
         return representation
 
     def __start_board(self):
-        M, T, L = 14, 8, 7
         self.board = chess.Board()
 
         # Get board current state
@@ -72,10 +74,12 @@ class ChessTensor():
         no_progress = torch.zeros(1, 8, 8)
         L_tensor = torch.cat([color, total_moves, white_king_castling, white_queen_castling, black_king_castling, black_queen_castling, no_progress], 0)
 
-        self.representation = torch.cat([current_representation, torch.zeros(M * (T - 1), 8, 8), L_tensor], 0)
+        self.representation = torch.cat([current_representation, torch.zeros(self.M * (self.T - 1), 8, 8), L_tensor], 0)
     
     def move_piece(self, move: chess.Move) -> torch.Tensor:
-        M, T, L = 14, 8, 7
+        # Moving the board forward
+        capture = self.board.is_capture(move)
+        self.board.push(move)
 
         # Get board current state
         board_tensor = self.__board_to_tensor()
@@ -91,8 +95,8 @@ class ChessTensor():
         repetition_2_tensor = torch.ones(1, 8, 8) if repetition_2 else torch.zeros(1, 8, 8)
         
         # Add in board tensor and remove oldest updates
-        start_channel = (M - 1) * T
-        end_channel = start_channel + M
+        start_channel = (self.M - 1) * self.T
+        end_channel = start_channel + self.M
         self.representation = torch.cat([board_tensor, repetition_1_tensor, repetition_2_tensor, self.representation[:start_channel], self.representation[end_channel:]], 0)
 
         # Adding L channel
@@ -102,11 +106,16 @@ class ChessTensor():
         white_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8)
         black_king_castling = torch.ones(1, 8, 8) if self.board.has_kingside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
         black_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
-        no_progress = self.representation[-1] # TODO: Figure out how to keep track of no progress
+
+        if capture:
+            no_progress = torch.zeros(1, 8, 8)
+        else:
+            no_progress = self.representation[-1] + 1
+
         L_tensor = torch.cat([color, total_moves, white_king_castling, white_queen_castling, black_king_castling, black_queen_castling, no_progress], 0)
 
         # Replace L tensor at the back 7 planes
-        self.representation = torch.cat([self.representation[:-L], L_tensor], 0)
+        self.representation = torch.cat([self.representation[:-self.L], L_tensor], 0)
     
     def get_representation(self) -> torch.Tensor:
         # For white representation
@@ -116,12 +125,25 @@ class ChessTensor():
             # Flipping the board for black
             return torch.flip(self.representation, [0, 1])
         
-    def get_moves(self) -> list:
+    def get_moves(self) -> list[chess.Move]:
         return list(self.board.legal_moves)
     
 
-chesser = ChessTensor()
-print(chesser.get_moves()[0].__dict__)
+# chesser = ChessTensor()
+# move = chesser.get_moves()[0]
+
+board = chess.Board()
+move = list(board.legal_moves)[0]
+
+if board.is_capture(move):
+    print("what")
+else:
+    print("no)")
+
+if board.is_capture(move):
+    print("what")
+else:
+    print("no)")
 
 # import torch
 
