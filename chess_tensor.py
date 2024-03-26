@@ -65,11 +65,9 @@ class ChessTensor():
         repetition_tensor = torch.zeros(2, 8, 8)
         current_representation = torch.cat([board_tensor, repetition_tensor], 0)
 
-        # print(current_representation)
-
         # Adding L channel
         color = torch.zeros(1, 8, 8)
-        total_moves = torch.ones(1, 8, 8)
+        total_moves = torch.zeros(1, 8, 8)
         white_king_castling = torch.ones(1, 8, 8)
         white_queen_castling = torch.ones(1, 8, 8)
         black_king_castling = torch.ones(1, 8, 8)
@@ -99,10 +97,12 @@ class ChessTensor():
         # Add in board tensor and remove oldest updates
         start_channel = (self.M - 1) * self.T
         end_channel = start_channel + self.M
-        self.representation = torch.cat([board_tensor, repetition_1_tensor, repetition_2_tensor, self.representation[:start_channel], self.representation[end_channel:]], 0)
+        self.representation = torch.cat([board_tensor, repetition_1_tensor, repetition_2_tensor, self.representation], 0)
+        self.representation = torch.cat([self.representation[:start_channel], self.representation[end_channel:]], 0)
+        # self.representation = torch.cat([board_tensor, repetition_1_tensor, repetition_2_tensor, self.representation[:start_channel], self.representation[end_channel:]], 0)
 
         # Adding L channel
-        color = 1 - self.representation[-7]
+        color = 1 - self.representation[-7] # 0 means white, 1 means black
         color = color.reshape(1, 8, 8).expand(1, 8, 8)
         total_moves = self.representation[-6] + 1
         total_moves = total_moves.reshape(1, 8, 8).expand(1, 8, 8)
@@ -115,13 +115,14 @@ class ChessTensor():
         L_tensor = torch.cat([color, total_moves, white_king_castling, white_queen_castling, black_king_castling, black_queen_castling, no_progress], 0)
 
         # Replace L tensor at the back 7 planes
-        self.representation = torch.cat([self.representation[:-self.L], L_tensor], 0)  
+        self.representation = torch.cat([self.representation[:-self.L], L_tensor], 0)
 
     def get_representation(self) -> torch.Tensor:
 
         # print(self.representation[0], self.representation[6], self.representation[14])
         # For white representation
         if self.representation[-7][0][0] == 0:
+            return torch.flip(self.representation, [1])
             return torch.flip(self.representation, [1])
         else:
             # Changing order of representation
@@ -138,6 +139,7 @@ class ChessTensor():
             copy[-5:-4, :, :], copy[-3:-2, :, :] = copy[-3:-2, :, :].clone(), copy[-5:-4, :, :].clone()
 
             # Flipping the board for black
+            return torch.flip(copy, [2])
             return torch.flip(copy, [2])
         
     def get_moves(self) -> List[chess.Move]:
@@ -254,8 +256,7 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
 
 # chesser = ChessTensor()
 
-# rep = chesser.get_representation()
-# print(rep[0], rep[6], rep[14], rep[20])
+
 
 # chesser.move_piece(chess.Move.from_uci('e2e4'))
 
