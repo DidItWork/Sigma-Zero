@@ -145,7 +145,12 @@ class ChessTensor():
     
 def actionToTensor(move:chess.Move) -> torch.tensor:
 
-    pass
+
+    move_tensor = torch.zeros(8*8*73)
+
+    
+
+    return move_tensor
 
 
 def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[chess.Move]:
@@ -160,31 +165,33 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
     numbering = [1,2,3,4,5,6,7,8]
 
     if color==chess.WHITE:
-        lettering = lettering[::-1]
-    else:
         numbering = numbering[::-1]
+    else:
+        lettering = lettering[::-1]
 
-    #list for for movement, x (+ ->), y (+ ->)
+    #list for for movement, (x (+ ->), y (- ^))
+    #direction for both sets of movements start from top and rotates clockwise
+        
     dir = [
-        (0,1), #0
-        (1,1), #1
+        (0,-1), #0
+        (1,-1), #1
         (1,0), #2
-        (1,-1), #3
-        (0,-1), #4
-        (-1,-1), #5
+        (1,1), #3
+        (0,1), #4
+        (-1,1), #5
         (-1,0), #6
-        (-1,1) #7
+        (-1,-1) #7
     ]
 
     knight_moves = [
-        (1,2), #0
-        (2,1), #1
-        (2,-1), #2
-        (1,-2), #3
-        (-1,-2), #4
-        (-2,-1), #5
-        (-2,1), #6
-        (-1,2) #7
+        (1,-2), #0
+        (2,-1), #1
+        (2,1), #2
+        (1,2), #3
+        (-1,2), #4
+        (-2,1), #5
+        (-2,-1), #6
+        (-1,-2) #7
     ]
 
     #Remember to flip board notation when a different person is playing
@@ -259,10 +266,19 @@ if __name__=="__main__":
 
     #for testing
 
-    move = torch.zeros(8*8*73)
+    # move = torch.zeros(8*8*73)
 
-    board = chess.Board()
+    # board = chess.Board()
 
-    move[8*8*72] = 1
+    # move[8*8*72] = 1
 
-    print(tensorToAction(move))
+    # print(tensorToAction(move))
+
+    game = ChessTensor()
+    game.move_piece(chess.Move.from_uci("e2e4"))
+    game.move_piece(chess.Move.from_uci("d7d6"))
+    board = game.get_representation()
+    print("white\n",board[0])
+    print(board[14])
+    print("black\n",board[6])
+    print(board[20])
