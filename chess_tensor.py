@@ -1,5 +1,6 @@
 import chess
 import torch
+from typing import List, Union, Tuple
 
 
 """
@@ -121,7 +122,7 @@ class ChessTensor():
         # print(self.representation[0], self.representation[6], self.representation[14])
         # For white representation
         if self.representation[-7][0][0] == 0:
-            return self.representation
+            return torch.flip(self.representation, [1])
         else:
             # Changing order of representation
             copy = self.representation.clone()
@@ -137,11 +138,112 @@ class ChessTensor():
             copy[-5:-4, :, :], copy[-3:-2, :, :] = copy[-3:-2, :, :].clone(), copy[-5:-4, :, :].clone()
 
             # Flipping the board for black
-            return torch.flip(copy, [1, 2])
+            return torch.flip(copy, [2])
         
-    def get_moves(self) -> list[chess.Move]:
+    def get_moves(self) -> List[chess.Move]:
         return list(self.board.legal_moves)
     
+def actionToTensor(move:chess.Move) -> torch.tensor:
+
+    pass
+
+
+def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[chess.Move]:
+
+    #return best move from tensor
+
+    # moves = moves.nonzero
+
+    move = int(torch.argmax(moves).item())
+
+    lettering = "abcdefgh"
+    numbering = [1,2,3,4,5,6,7,8]
+
+    if color==chess.WHITE:
+        lettering = lettering[::-1]
+    else:
+        numbering = numbering[::-1]
+
+    #list for for movement, x (+ ->), y (+ ->)
+    dir = [
+        (0,1), #0
+        (1,1), #1
+        (1,0), #2
+        (1,-1), #3
+        (0,-1), #4
+        (-1,-1), #5
+        (-1,0), #6
+        (-1,1) #7
+    ]
+
+    knight_moves = [
+        (1,2), #0
+        (2,1), #1
+        (2,-1), #2
+        (1,-2), #3
+        (-1,-2), #4
+        (-2,-1), #5
+        (-2,1), #6
+        (-1,2) #7
+    ]
+
+    #Remember to flip board notation when a different person is playing
+
+    #check plane of move
+    plane = move//64
+
+    #check position of move
+    move %= 64
+    row = move//8
+    col = move%8
+
+    promotion = ""
+
+    if plane<56:
+        #queen move
+        direction = plane//8
+        squares = 1+plane%7
+
+        toCol = col+dir[direction][0]*squares
+        toRow = row+dir[direction][1]*squares
+
+        # if toRow == 7 and board.piece_at(chess.Square(row*8+col)) in "pP":
+        #     promotion = "q"
+    
+    elif plane<64:
+        #knight move
+        direction = plane - 56
+        
+        toCol = col+knight_moves[direction][0]
+        toRow = row+knight_moves[direction][1]
+
+    else:
+
+        plane -= 64
+
+        #Pawn promotion if not pawn
+
+        #Forward from row 7
+        toRow = row+1
+
+        if plane%3==1:
+
+            #Capture from row 7 right diagonal
+            toCol = col+1
+        
+        elif plane%3==2:
+
+            #Capture from row 7 left diagonal
+            toCol = col-1
+        
+        else:
+            toCol = col
+
+        promotion = "nbr"[plane//3]
+
+    move_str = f"{lettering[col]}{numbering[row]}{lettering[toCol]}{numbering[toRow]}{promotion}"
+
+    return chess.Move.from_uci(move_str)
 
 # chesser = ChessTensor()
 
@@ -153,3 +255,14 @@ class ChessTensor():
 # rep = chesser.get_representation()
 # print(rep[0], rep[6], rep[14], rep[20])
 
+if __name__=="__main__":
+
+    #for testing
+
+    move = torch.zeros(8*8*73)
+
+    board = chess.Board()
+
+    move[8*8*72] = 1
+
+    print(tensorToAction(move))
