@@ -25,6 +25,13 @@ $$l = (z-v)^2-\pi^T\log{p}+c||\theta||^2$$, $c$ is a constant -->
 
 ### Board State Representation
 
+For the player's perspectives, this is what the tensor will look like. The board will change according to the current player.
+White's View:
+![white_view](https://github.com/DidItWork/Sigma-Zero/assets/63920704/39db00c8-c4b2-4578-b308-c185e408f54c)
+
+Black's View:
+![black_view](https://github.com/DidItWork/Sigma-Zero/assets/63920704/36f20d8a-d3e8-4731-8c5d-f24864e4eef9)
+
 The board is represented as a (119, 8, 8) tensor, as calculated with MT + L. Where M = 14, T = 8, L = 7.
 
 M represents the number of pieces/planes that are recorded in the board state. In our implementation, we mimicked AlphaZero's implementation of keeping track of all 12 pieces with 2 repetition planes. The order of the planes are as follows:
