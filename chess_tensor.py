@@ -182,7 +182,7 @@ class ChessTensor():
     def change_perspective(self, state, player):
         return state * player
 
-    def get_encoded_state(self, state):
+    def get_encoded_state(self, state):  # Something like get_rep, might delete function
         encoded_state = np.stack(
             (state == -1, state == 0, state == 1)
         ).astype(np.float32)
