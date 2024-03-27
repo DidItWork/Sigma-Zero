@@ -36,7 +36,7 @@ class MCTS0:
                 policy = torch.softmax(policy, axis=1).squeeze(0).cpu().numpy()
 
                 valid_moves = self.game.get_valid_moves(node.state)
-                policy *= valid_moves
+                policy *= valid_moves # TODO: Use valid_moves to filter out policy moves
                 policy /= np.sum(policy)
 
                 value = value.item()
@@ -47,8 +47,9 @@ class MCTS0:
             node.backpropagate(value)
 
         # Return visit counts
-        action_probs = np.zeros(self.game.action_size)
+        action_probs = {}
         for child in root.children:
             action_probs[child.action_taken] = child.visit_count
-        action_probs /= np.sum(action_probs)
+        sum_values = sum(action_probs.values())
+        action_probs = {k: v / sum_values for k, v in action_probs.items()}
         return action_probs
