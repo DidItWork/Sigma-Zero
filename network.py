@@ -105,9 +105,9 @@ class policyNN(nn.Module):
         self.fc_v1 = nn.Linear(64, 256)
         self.fc_v2 = nn.Linear(256, 1)
 
-        self.resnet_blocks = nn.ModuleList()
+        self.resnet_blocks = nn.Sequential()
 
-        for i in range(19):
+        for _ in range(19):
 
             self.resnet_blocks.append(BasicBlock(256, 256, 1))
 
@@ -116,7 +116,7 @@ class policyNN(nn.Module):
         x = self.conv_p1(x)
         x = nn.ReLU()(x)
         x = self.conv_p2(x)
-        x = torch.flatten(x)
+        x = torch.flatten(x, start_dim=1)
 
         return x
 
@@ -124,22 +124,57 @@ class policyNN(nn.Module):
 
         x = self.conv_v1(x)
         x = nn.ReLU()(x)
-        x = torch.flatten(x)
+        x = torch.flatten(x, start_dim=1)
         x = self.fc_v1(x)
         x = self.fc_v2(x)
-        x = torch.tanh()(x)
+        x = torch.tanh(x)
 
         return x   
 
-    def forward(self, s: tensor) -> tuple:
-        
-        x = self.conv1(s)
-        x = nn.ReLU()(s)
+    def forward(self, x: tensor, policy_mask: tensor = None) -> tuple:
+
+        x = self.conv1(x)
+        x = nn.ReLU()(x)
 
         x = self.resnet_blocks(x)
 
-        policy = self.policy_head(x)
-        value = self.value_head(x)
+        policy = self.policy_head(x).cpu()
+
+        value = self.value_head(x).cpu()
+
+        # print(x.shape, policy.shape)
+
+        if policy_mask == None:
+
+            policy_mask = torch.ones(policy.shape)
+        
+        policy *= policy_mask
+
+        #masked softmax
+
+        policy_exp = torch.exp(policy)
+
+        policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
+
+        policy = policy_exp/policy_exp_sum
 
         return (policy, value)
+
+if __name__=="__main__":
+
+    from chess_tensor import *
+
+    config = dict()
+
+    network = policyNN(config).to("cuda")
+
+    game = ChessTensor()
+
+    board = game.get_representation().unsqueeze(0).cuda()
+
+    policy, value = network(board)
+
+    print(policy)
+    print(value)
+
 

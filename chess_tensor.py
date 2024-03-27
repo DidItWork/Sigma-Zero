@@ -145,14 +145,98 @@ class ChessTensor():
     def get_moves(self) -> List[chess.Move]:
         return list(self.board.legal_moves)
     
-def actionToTensor(move:chess.Move) -> torch.tensor:
+def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE) -> torch.tensor:
 
+    moveTensor = torch.zeros(8*8*73)
 
-    move_tensor = torch.zeros(8*8*73)
+    dir = {
+        (0,-1) : 0,
+        (1,-1) : 1,
+        (1,0) : 2,
+        (1,1) : 3,
+        (0,1) : 4,
+        (-1,1) : 5,
+        (-1,0) : 6,
+        (-1,-1) : 7,
+    }
 
+    knight_moves = {
+        (1,-2) : 0, #0
+        (2,-1) : 1, #1
+        (2,1) : 2, #2
+        (1,2) : 3, #3
+        (-1,2) : 4, #4
+        (-2,1) : 5, #5
+        (-2,-1) : 6, #6
+        (-1,-2) : 7, #7
+    }
+
+    def check_polarity(val) -> int:
+
+        if val>0:
+            return 1
+        elif val<0:
+            return -1
+        else:
+            return 0
+
+    from_square = move.from_square
+    to_square = move.to_square
+
+    if color==chess.WHITE:
+        row = 7-from_square//8
+        col = from_square%8
+        toRow = 7-to_square//8
+        toCol = to_square%8
+    else:
+        row = from_square//8
+        col = 7-from_square%8
+        toRow = to_square//8
+        toCol = 7-to_square%8
     
+    # print(row, toRow, col, toCol)
+    
+    #Queen Move
+    if toCol == col or toRow == row or abs(toRow-row)/abs(toCol-col)==1:
 
-    return move_tensor
+        #Check for underpromotion
+        if move.uci()[-1] in "nbr":
+
+            i = "nbr".index(move.uci()[-1])
+
+            i*=3
+
+            if toCol>col:
+
+                #Right Diagonal Capture
+                i+=1
+                
+            
+            elif toCol<col:
+
+                #Right Diagonal Capture
+                i+=2
+            
+
+            moveTensor[(64+i)*8*8+row*8+col] = 1
+
+        else:
+
+            squares = max(abs(toRow-row), abs(toCol-col))
+
+            direction = (check_polarity(toCol-col), check_polarity(toRow-row))
+
+            # print(squares, direction)
+
+            moveTensor[(dir[direction]*7+(squares-1))*64+row*8+col] = 1
+
+    else:
+
+        #Knight Move
+
+        moveTensor[knight_moves[toCol-col,toRow-row]*64+row*8+col] = 1
+    
+    return moveTensor
 
 
 def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[chess.Move]:
@@ -196,8 +280,6 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
         (-1,-2) #7
     ]
 
-    #Remember to flip board notation when a different person is playing
-
     #check plane of move
     plane = move//64
 
@@ -233,7 +315,7 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
         #Pawn promotion if not pawn
 
         #Forward from row 7
-        toRow = row+1
+        toRow = row-1
 
         if plane%3==1:
 
@@ -265,15 +347,17 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
 
 if __name__=="__main__":
 
+    pass
+
     #for testing
 
-    # move = torch.zeros(8*8*73)
+    move = torch.zeros(8*8*73)
 
-    # board = chess.Board()
+    board = chess.Board()
 
-    # move[8*8*72] = 1
+    move[8*8*72] = 1
 
-    # print(tensorToAction(move))
+    print(tensorToAction(move))
 
     game = ChessTensor()
     game.move_piece(chess.Move.from_uci("e2e4"))
@@ -283,3 +367,6 @@ if __name__=="__main__":
     print(board[14])
     print("black\n",board[6])
     print(board[20])
+
+    move = chess.Move.from_uci("a1e5")
+    print(tensorToAction(actionToTensor(move)))
