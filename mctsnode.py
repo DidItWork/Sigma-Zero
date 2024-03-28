@@ -30,6 +30,7 @@ class Node:
             if ucb > best_ucb:
                 best_child = child
                 best_ucb = ucb
+        self.game.move_piece(best_child.action_taken)
         return best_child
     
     def get_ucb(self, child):

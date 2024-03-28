@@ -4,6 +4,7 @@ from mctsnode import Node
 from chess_tensor import ChessTensor, actionToTensor, tensorToAction, validActionsToTensor
 from network import policyNN
 import chess
+import copy
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -24,12 +25,12 @@ class MCTS0:
     @torch.no_grad()
     def search(self, state, stateTensor):
 
-        # Define root node
-        root = Node(self.game, self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
-
         # Selection
         for search in range(self.args['num_searches']):
 
+            # Define root node
+            root = Node(copy.deepcopy(self.game), self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
+            
             print("Searching iteration ", search)
             node = root
 
@@ -40,19 +41,20 @@ class MCTS0:
             print("Searching node")
             print(node.state, node.color)
             
-            value, is_terminal = self.game.get_value_and_terminated(node.state)
-            value = self.game.get_opponent_value(value)
+            value, is_terminal = node.game.get_value_and_terminated(node.state)
+            value = node.game.get_opponent_value(value)
 
             if not is_terminal:
 
-                valid_moves = self.game.get_valid_moves(node.state)
+                valid_moves = node.game.get_valid_moves(node.state)
 
                 # print(valid_moves)
 
                 policy_mask = validActionsToTensor(valid_moves, node.color)
 
                 policy, value = self.model(
-                    stateTensor.unsqueeze(0).to(device),
+                    # stateTensor.unsqueeze(0).to(device),
+                    node.game.get_representation().unsqueeze(0).to(device),
                     policy_mask.unsqueeze(0)
                 )
 
@@ -91,7 +93,7 @@ if __name__ == "__main__":
     model.eval()
     args = {
         'C': 2,
-        'num_searches': 50,
+        'num_searches': 100,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
