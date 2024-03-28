@@ -152,7 +152,7 @@ class policyNN(nn.Module):
 
         policy_exp = torch.exp(policy)*policy_mask
 
-        policy_exp_sum = torch.sum(policy_exp, dim=1)
+        policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
 
         policy = policy_exp/policy_exp_sum
 

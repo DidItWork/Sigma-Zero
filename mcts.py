@@ -3,6 +3,7 @@ import torch
 from mctsnode import Node
 from chess_tensor import ChessTensor, actionToTensor, tensorToAction, validActionsToTensor
 from network import policyNN
+import chess
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -18,43 +19,58 @@ class MCTS0:
                  model=None):
         self.game = game
         self.args = args # args = ['C', 'num_searches', 'num_iterations', 'num_selfPlay_iterations', 'num_epochs', 'batch_size']
-        self.model = model.to(device)
+        self.model = model
 
     @torch.no_grad()
     def search(self, state, stateTensor):
 
-        self.model.eval()
-
         # Define root node
-        root = Node(self.game, self.args, state)
+        root = Node(self.game, self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
 
         # Selection
         for search in range(self.args['num_searches']):
+
+            print("Searching iteration ", search)
             node = root
 
             while node.is_fully_expanded():
                 node = node.select()
             
-            value, is_terminal = self.game.get_value_and_terminated(node.state, node.action_taken)
+            # print(node.state)
+            print("Searching node")
+            print(node.state, node.color)
+            
+            value, is_terminal = self.game.get_value_and_terminated(node.state)
             value = self.game.get_opponent_value(value)
 
             if not is_terminal:
 
                 valid_moves = self.game.get_valid_moves(node.state)
 
-                policy_mask = validActionsToTensor(valid_moves)
+                # print(valid_moves)
+
+                policy_mask = validActionsToTensor(valid_moves, node.color)
 
                 policy, value = self.model(
                     stateTensor.unsqueeze(0).to(device),
-                    policy_mask
+                    policy_mask.unsqueeze(0)
                 )
 
+                policy = policy.squeeze(0)
                 value = value.item()
 
-                print(policy.shape, policy)
-                print(value.shape, value)
+                # print(policy.shape, policy, policy.nonzero())
+                # print(value)
 
-                node.expand(policy)  # Expansion
+                valid_moves = tensorToAction(policy, node.color)
+
+                probs = policy[policy.nonzero()]
+
+                policy_list = list(zip(valid_moves, probs))
+
+                # print(policy_list)
+
+                node.expand(policy_list)  # Expansion
 
             # Backpropagation
             node.backpropagate(value)
@@ -71,10 +87,11 @@ if __name__ == "__main__":
 
     game = ChessTensor()
     config = dict()
-    model = policyNN(config)
+    model = policyNN(config).to(device)
+    model.eval()
     args = {
         'C': 2,
-        'num_searches': 60,
+        'num_searches': 50,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
@@ -86,5 +103,5 @@ if __name__ == "__main__":
     
     boardTensor = game.get_representation()
     
-    mcts.search(game.board, boardTensor)
+    print(mcts.search(game.board, boardTensor))
     

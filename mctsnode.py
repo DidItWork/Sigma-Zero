@@ -1,15 +1,17 @@
 import numpy as np
 import math
 import copy
+import chess
 
 class Node:
-    def __init__(self, game, args, state, parent=None, action_taken=None, prior=0):
+    def __init__(self, game, args, state, parent=None, action_taken=None, prior=0, color=chess.WHITE):
         self.game = game
         self.args = args
         self.state = copy.deepcopy(state)
         self.parent = parent
         self.action_taken = action_taken
         self.prior = prior
+        self.color = color
 
         self.children = []
         
@@ -42,14 +44,23 @@ class Node:
         return q_value + self.args['C'] * (math.sqrt(self.visit_count) / (child.visit_count + 1)) * child.prior
     
     def expand(self, policy):
-        for action, prob in enumerate(policy):
-            if prob > 0:
-                child_state = copy.deepcopy(self.state)
-                child_state = self.game.get_next_state(child_state, action, 1)
-                # child_state = self.game.change_perspective(child_state, player=-1)
 
-                child = Node(self.game, self.args, child_state, self, action, prob)
-                self.children.append(child)
+        """
+        Reeived policy as a list of tuples (action, prob)
+        """
+
+        for action, prob in policy:
+            # if prob > 0:
+            # print(self.state)
+            # print(action, prob)
+
+            child_state = copy.deepcopy(self.state)
+
+            child_state = self.game.get_next_state(child_state, action, 1)
+            # child_state = self.game.change_perspective(child_state, player=-1)
+
+            child = Node(self.game, self.args, child_state, self, action, prob, color=not self.color)
+            self.children.append(child)
         return child
     
     def backpropagate(self, value):

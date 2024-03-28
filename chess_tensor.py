@@ -117,6 +117,8 @@ class ChessTensor():
 
         # Replace L tensor at the back 7 planes
         self.representation = torch.cat([self.representation[:-self.L], L_tensor], 0)
+    
+
 
     def get_representation(self) -> torch.Tensor:
 
@@ -154,26 +156,33 @@ class ChessTensor():
         return state
     
     def get_valid_moves(self ,state):
+        # print("get valid moves", state)
         return list(state.legal_moves)
     
-    def check_win(self, state, action):
-        if action == None:
-            return False
+    # def check_win(self, state):
+    #     if action == None:
+    #         return False
         
-        state.push(action)
+    #     state.push(action)
 
-        if state.is_checkmate():
-            state.pop()
-            return True
-        else:
-            state.pop()
-            return False
+    #     if state.is_checkmate():
+    #         state.pop()
+    #         return True
+    #     else:
+    #         state.pop()
+    #         return False
 
-    def get_value_and_terminated(self, state, action):
-        if self.check_win(state, action):
-            return 1, True
-        if np.sum(self.get_valid_moves(state) == 0):
-            return 0, True
+    def get_value_and_terminated(self, state, color=chess.WHITE):
+        if state.is_game_over():
+            winner = state.outcome().winner()
+            if winner == None:
+                #Draw
+                return 0, True
+            elif winner == color:
+                return 1, True
+            else:
+                return -1, True
+
         return 0, False
     
     def get_opponent(self, player):
@@ -193,7 +202,7 @@ class ChessTensor():
         return encoded_state
     
     
-def validActionsToTensor(valid_moves:List[chess.Move]) -> torch.tensor:
+def validActionsToTensor(valid_moves:List[chess.Move], color=chess.WHITE) -> torch.tensor:
     """
     Returns a vector mask of valid actions
     """
@@ -202,7 +211,10 @@ def validActionsToTensor(valid_moves:List[chess.Move]) -> torch.tensor:
     actionTensor = torch.zeros(73*8*8)
 
     for valid_move in valid_moves:
-        actionTensor += actionToTensor(valid_move)
+        # print(valid_move)
+        # print(actionToTensor(valid_move).nonzero())
+        # print(tensorToAction(actionToTensor(valid_move)))
+        actionTensor += actionToTensor(valid_move, color)
     
     return actionTensor
     
@@ -256,7 +268,7 @@ def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE) -> torch.tens
         toRow = to_square//8
         toCol = 7-to_square%8
     
-    # print(row, toRow, col, toCol)
+    # print(move, row, toRow, col, toCol)
     
     #Queen Move
     if toCol == col or toRow == row or abs(toRow-row)/abs(toCol-col)==1:
@@ -296,18 +308,20 @@ def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE) -> torch.tens
 
         #Knight Move
 
-        moveTensor[knight_moves[toCol-col,toRow-row]*64+row*8+col] = 1
+        moveTensor[(56+knight_moves[toCol-col,toRow-row])*64+row*8+col] = 1
     
     return moveTensor
 
 
 def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[chess.Move]:
 
-    #return best move from tensor
+    #return all moves from tensor
 
-    # moves = moves.nonzero
+    moves = moves.nonzero()
 
-    move = int(torch.argmax(moves).item())
+    chess_moves = []
+
+    # move = int(torch.argmax(moves).item())
 
     lettering = "abcdefgh"
     numbering = [1,2,3,4,5,6,7,8]
@@ -342,61 +356,69 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
         (-1,-2) #7
     ]
 
-    #check plane of move
-    plane = move//64
+    for move in moves:
 
-    #check position of move
-    move %= 64
-    row = move//8
-    col = move%8
+        # print(move)
 
-    promotion = ""
+        #check plane of move
+        plane = move//64
 
-    if plane<56:
-        #queen move
-        direction = plane//8
-        squares = 1+plane%7
+        #check position of move
+        move %= 64
+        row = move//8
+        col = move%8
 
-        toCol = col+dir[direction][0]*squares
-        toRow = row+dir[direction][1]*squares
+        promotion = ""
 
-        # if toRow == 7 and board.piece_at(chess.Square(row*8+col)) in "pP":
-        #     promotion = "q"
-    
-    elif plane<64:
-        #knight move
-        direction = plane - 56
+        if plane<56:
+            #queen move
+            direction = plane//7
+            squares = 1+plane%7
+
+            toCol = col+dir[direction][0]*squares
+            toRow = row+dir[direction][1]*squares
+
+            # if toRow == 7 and board.piece_at(chess.Square(row*8+col)) in "pP":
+            #     promotion = "q"
         
-        toCol = col+knight_moves[direction][0]
-        toRow = row+knight_moves[direction][1]
+        elif plane<64:
+            #knight move
+            direction = plane - 56
+            
+            toCol = col+knight_moves[direction][0]
+            toRow = row+knight_moves[direction][1]
 
-    else:
-
-        plane -= 64
-
-        #Pawn promotion if not pawn
-
-        #Forward from row 7
-        toRow = row-1
-
-        if plane%3==1:
-
-            #Capture from row 7 right diagonal
-            toCol = col+1
-        
-        elif plane%3==2:
-
-            #Capture from row 7 left diagonal
-            toCol = col-1
-        
         else:
-            toCol = col
 
-        promotion = "nbr"[plane//3]
+            plane -= 64
 
-    move_str = f"{lettering[col]}{numbering[row]}{lettering[toCol]}{numbering[toRow]}{promotion}"
+            #Pawn promotion if not pawn
 
-    return chess.Move.from_uci(move_str)
+            #Forward from row 7
+            toRow = row-1
+
+            if plane%3==1:
+
+                #Capture from row 7 right diagonal
+                toCol = col+1
+            
+            elif plane%3==2:
+
+                #Capture from row 7 left diagonal
+                toCol = col-1
+            
+            else:
+                toCol = col
+
+            promotion = "nbr"[plane//3]
+
+        # print(row, toRow, col, toCol)
+
+        move_str = f"{lettering[col]}{numbering[row]}{lettering[toCol]}{numbering[toRow]}{promotion}"
+
+        chess_moves.append(chess.Move.from_uci(move_str))
+
+    return chess_moves
 
 
 # chesser = ChessTensor()
