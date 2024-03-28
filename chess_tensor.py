@@ -449,25 +449,25 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
     return chess.Move.from_uci(move_str)
 
 
-chesser = ChessTensor()
+# chesser = ChessTensor()
 
-for i in range(12):
-    moves = chesser.get_moves()
-    chesser.move_piece(moves[0])
+# for i in range(12):
+#     moves = chesser.get_moves()
+#     chesser.move_piece(moves[0])
 
-rep1 = chesser.get_representation()
+# rep1 = chesser.get_representation()
 
-moves = chesser.get_moves()
-chesser.move_piece(moves[0])
-chesser.undo_move()
+# moves = chesser.get_moves()
+# chesser.move_piece(moves[0])
+# chesser.undo_move()
 
-rep2 = chesser.get_representation()
+# rep2 = chesser.get_representation()
 
-# 14, 28, 42, 56, 70, 84, 98, 112
-# 0 , 14, 28, 42, 56, 70, 84, 98    
-for i in range(119):
-    if not torch.all(rep1[i] == rep2[i]):
-        print(i)
+# # 14, 28, 42, 56, 70, 84, 98, 112
+# # 0 , 14, 28, 42, 56, 70, 84, 98    
+# for i in range(119):
+#     if not torch.all(rep1[i] == rep2[i]):
+#         print(i)
 
 
 
