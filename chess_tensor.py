@@ -1,6 +1,8 @@
 import chess
 import torch
 import numpy as np
+from typing import List, Union, Tuple
+
 
 """
 MT + L
@@ -64,11 +66,9 @@ class ChessTensor():
         repetition_tensor = torch.zeros(2, 8, 8)
         current_representation = torch.cat([board_tensor, repetition_tensor], 0)
 
-        # print(current_representation)
-
         # Adding L channel
         color = torch.zeros(1, 8, 8)
-        total_moves = torch.ones(1, 8, 8)
+        total_moves = torch.zeros(1, 8, 8)
         white_king_castling = torch.ones(1, 8, 8)
         white_queen_castling = torch.ones(1, 8, 8)
         black_king_castling = torch.ones(1, 8, 8)
@@ -98,10 +98,12 @@ class ChessTensor():
         # Add in board tensor and remove oldest updates
         start_channel = (self.M - 1) * self.T
         end_channel = start_channel + self.M
-        self.representation = torch.cat([board_tensor, repetition_1_tensor, repetition_2_tensor, self.representation[:start_channel], self.representation[end_channel:]], 0)
+        self.representation = torch.cat([board_tensor, repetition_1_tensor, repetition_2_tensor, self.representation], 0)
+        self.representation = torch.cat([self.representation[:start_channel], self.representation[end_channel:]], 0)
+        # self.representation = torch.cat([board_tensor, repetition_1_tensor, repetition_2_tensor, self.representation[:start_channel], self.representation[end_channel:]], 0)
 
         # Adding L channel
-        color = 1 - self.representation[-7]
+        color = 1 - self.representation[-7] # 0 means white, 1 means black
         color = color.reshape(1, 8, 8).expand(1, 8, 8)
         total_moves = self.representation[-6] + 1
         total_moves = total_moves.reshape(1, 8, 8).expand(1, 8, 8)
@@ -114,14 +116,15 @@ class ChessTensor():
         L_tensor = torch.cat([color, total_moves, white_king_castling, white_queen_castling, black_king_castling, black_queen_castling, no_progress], 0)
 
         # Replace L tensor at the back 7 planes
-        self.representation = torch.cat([self.representation[:-self.L], L_tensor], 0)  
+        self.representation = torch.cat([self.representation[:-self.L], L_tensor], 0)
 
     def get_representation(self) -> torch.Tensor:
 
         # print(self.representation[0], self.representation[6], self.representation[14])
         # For white representation
         if self.representation[-7][0][0] == 0:
-            return self.representation
+            return torch.flip(self.representation, [1])
+            return torch.flip(self.representation, [1])
         else:
             # Changing order of representation
             copy = self.representation.clone()
@@ -137,11 +140,13 @@ class ChessTensor():
             copy[-5:-4, :, :], copy[-3:-2, :, :] = copy[-3:-2, :, :].clone(), copy[-5:-4, :, :].clone()
 
             # Flipping the board for black
-            return torch.flip(copy, [1, 2])
+            return torch.flip(copy, [2])
+            return torch.flip(copy, [2])
         
-    def get_moves(self) -> list[chess.Move]:
+    def get_moves(self) -> List[chess.Move]:
         return list(self.board.legal_moves)
     
+
     # New functions for mcts. State is of type board.
     def get_initial_state(self):
         return self.board
@@ -190,13 +195,229 @@ class ChessTensor():
         return encoded_state
     
 
+def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE) -> torch.tensor:
+
+    moveTensor = torch.zeros(8*8*73)
+
+    dir = {
+        (0,-1) : 0,
+        (1,-1) : 1,
+        (1,0) : 2,
+        (1,1) : 3,
+        (0,1) : 4,
+        (-1,1) : 5,
+        (-1,0) : 6,
+        (-1,-1) : 7,
+    }
+
+    knight_moves = {
+        (1,-2) : 0, #0
+        (2,-1) : 1, #1
+        (2,1) : 2, #2
+        (1,2) : 3, #3
+        (-1,2) : 4, #4
+        (-2,1) : 5, #5
+        (-2,-1) : 6, #6
+        (-1,-2) : 7, #7
+    }
+
+    def check_polarity(val) -> int:
+
+        if val>0:
+            return 1
+        elif val<0:
+            return -1
+        else:
+            return 0
+
+    from_square = move.from_square
+    to_square = move.to_square
+
+    if color==chess.WHITE:
+        row = 7-from_square//8
+        col = from_square%8
+        toRow = 7-to_square//8
+        toCol = to_square%8
+    else:
+        row = from_square//8
+        col = 7-from_square%8
+        toRow = to_square//8
+        toCol = 7-to_square%8
+    
+    # print(row, toRow, col, toCol)
+    
+    #Queen Move
+    if toCol == col or toRow == row or abs(toRow-row)/abs(toCol-col)==1:
+
+        #Check for underpromotion
+        if move.uci()[-1] in "nbr":
+
+            i = "nbr".index(move.uci()[-1])
+
+            i*=3
+
+            if toCol>col:
+
+                #Right Diagonal Capture
+                i+=1
+                
+            
+            elif toCol<col:
+
+                #Right Diagonal Capture
+                i+=2
+            
+
+            moveTensor[(64+i)*8*8+row*8+col] = 1
+
+        else:
+
+            squares = max(abs(toRow-row), abs(toCol-col))
+
+            direction = (check_polarity(toCol-col), check_polarity(toRow-row))
+
+            # print(squares, direction)
+
+            moveTensor[(dir[direction]*7+(squares-1))*64+row*8+col] = 1
+
+    else:
+
+        #Knight Move
+
+        moveTensor[knight_moves[toCol-col,toRow-row]*64+row*8+col] = 1
+    
+    return moveTensor
+
+
+def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[chess.Move]:
+
+    #return best move from tensor
+
+    # moves = moves.nonzero
+
+    move = int(torch.argmax(moves).item())
+
+    lettering = "abcdefgh"
+    numbering = [1,2,3,4,5,6,7,8]
+
+    if color==chess.WHITE:
+        numbering = numbering[::-1]
+    else:
+        lettering = lettering[::-1]
+
+    #list for for movement, (x (+ ->), y (- ^))
+    #direction for both sets of movements start from top and rotates clockwise
+        
+    dir = [
+        (0,-1), #0
+        (1,-1), #1
+        (1,0), #2
+        (1,1), #3
+        (0,1), #4
+        (-1,1), #5
+        (-1,0), #6
+        (-1,-1) #7
+    ]
+
+    knight_moves = [
+        (1,-2), #0
+        (2,-1), #1
+        (2,1), #2
+        (1,2), #3
+        (-1,2), #4
+        (-2,1), #5
+        (-2,-1), #6
+        (-1,-2) #7
+    ]
+
+    #check plane of move
+    plane = move//64
+
+    #check position of move
+    move %= 64
+    row = move//8
+    col = move%8
+
+    promotion = ""
+
+    if plane<56:
+        #queen move
+        direction = plane//8
+        squares = 1+plane%7
+
+        toCol = col+dir[direction][0]*squares
+        toRow = row+dir[direction][1]*squares
+
+        # if toRow == 7 and board.piece_at(chess.Square(row*8+col)) in "pP":
+        #     promotion = "q"
+    
+    elif plane<64:
+        #knight move
+        direction = plane - 56
+        
+        toCol = col+knight_moves[direction][0]
+        toRow = row+knight_moves[direction][1]
+
+    else:
+
+        plane -= 64
+
+        #Pawn promotion if not pawn
+
+        #Forward from row 7
+        toRow = row-1
+
+        if plane%3==1:
+
+            #Capture from row 7 right diagonal
+            toCol = col+1
+        
+        elif plane%3==2:
+
+            #Capture from row 7 left diagonal
+            toCol = col-1
+        
+        else:
+            toCol = col
+
+        promotion = "nbr"[plane//3]
+
+    move_str = f"{lettering[col]}{numbering[row]}{lettering[toCol]}{numbering[toRow]}{promotion}"
+
+    return chess.Move.from_uci(move_str)
+
+
 # chesser = ChessTensor()
 
-# rep = chesser.get_representation()
-# print(rep[0], rep[6], rep[14], rep[20])
+
 
 # chesser.move_piece(chess.Move.from_uci('e2e4'))
 
 # rep = chesser.get_representation()
 # print(rep[0], rep[6], rep[14], rep[20])
 
+if __name__=="__main__":
+
+    pass
+
+    #for testing
+
+    move = torch.zeros(8*8*73)
+
+    board = chess.Board()
+
+    move[8*8*72] = 1
+
+    print(tensorToAction(move))
+
+    game = ChessTensor()
+    game.move_piece(chess.Move.from_uci("e2e4"))
+    game.move_piece(chess.Move.from_uci("d7d6"))
+    board = game.get_representation()
+    print("white\n",board[0])
+    print(board[14])
+    print("black\n",board[6])
+    print(board[20])
+
+    move = chess.Move.from_uci("a1e5")
+    print(tensorToAction(actionToTensor(move)))
