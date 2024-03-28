@@ -147,12 +147,10 @@ class policyNN(nn.Module):
         if policy_mask == None:
 
             policy_mask = torch.ones(policy.shape)
-        
-        policy *= policy_mask
 
         #masked softmax
 
-        policy_exp = torch.exp(policy)
+        policy_exp = torch.exp(policy)*policy_mask
 
         policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
 

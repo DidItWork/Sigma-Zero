@@ -1,11 +1,12 @@
 import numpy as np
 import math
+import copy
 
 class Node:
     def __init__(self, game, args, state, parent=None, action_taken=None, prior=0):
         self.game = game
         self.args = args
-        self.state = state.deepcopy()
+        self.state = copy.deepcopy(state)
         self.parent = parent
         self.action_taken = action_taken
         self.prior = prior
@@ -43,7 +44,7 @@ class Node:
     def expand(self, policy):
         for action, prob in enumerate(policy):
             if prob > 0:
-                child_state = self.state.deepcopy()
+                child_state = copy.deepcopy(self.state)
                 child_state = self.game.get_next_state(child_state, action, 1)
                 # child_state = self.game.change_perspective(child_state, player=-1)
 

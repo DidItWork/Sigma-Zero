@@ -124,7 +124,6 @@ class ChessTensor():
         # For white representation
         if self.representation[-7][0][0] == 0:
             return torch.flip(self.representation, [1])
-            return torch.flip(self.representation, [1])
         else:
             # Changing order of representation
             copy = self.representation.clone()
@@ -140,7 +139,6 @@ class ChessTensor():
             copy[-5:-4, :, :], copy[-3:-2, :, :] = copy[-3:-2, :, :].clone(), copy[-5:-4, :, :].clone()
 
             # Flipping the board for black
-            return torch.flip(copy, [2])
             return torch.flip(copy, [2])
         
     def get_moves(self) -> List[chess.Move]:
@@ -193,6 +191,20 @@ class ChessTensor():
         ).astype(np.float32)
 
         return encoded_state
+    
+    
+def validActionsToTensor(valid_moves:List[chess.Move]) -> torch.tensor:
+    """
+    Returns a vector mask of valid actions
+    """
+
+    #Initialize empty action tensor
+    actionTensor = torch.zeros(73*8*8)
+
+    for valid_move in valid_moves:
+        actionTensor += actionToTensor(valid_move)
+    
+    return actionTensor
     
 
 def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE) -> torch.tensor:
