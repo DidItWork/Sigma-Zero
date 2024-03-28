@@ -117,38 +117,38 @@ class ChessTensor():
         # Combining all tensors
         self.representation = torch.cat([current_tensor, self.representation, L_tensor], 0)
 
-    # def undo_move(self) -> torch.Tensor:
-    #     self.board.pop()
+    def undo_move(self) -> torch.Tensor:
+        self.board.pop()
 
-    #     # Remove first M channels
-    #     self.representation = self.representation[self.M:]
+        # Remove first M channels
+        self.representation = self.representation[self.M:]
 
-    #     # Regenerate lost tensor
-    #     old_tensor = self.__get_past_board_tensor(self.board)
+        # Regenerate lost tensor
+        old_tensor = self.__get_past_board_tensor(self.board)
 
-    #     # Regenerate old L tensor
-    #     color = 1 - self.representation[-7] # 0 means white, 1 means black
-    #     color = color.reshape(1, 8, 8).expand(1, 8, 8)
-    #     total_moves = self.representation[-6] - 1
-    #     total_moves = total_moves.reshape(1, 8, 8).expand(1, 8, 8)
-    #     white_king_castling = torch.ones(1, 8, 8) if self.board.has_kingside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8)
-    #     white_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8)
-    #     black_king_castling = torch.ones(1, 8, 8) if self.board.has_kingside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
-    #     black_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
-    #     no_progress = torch.Tensor([self.board.halfmove_clock]).reshape(1, 1, 1).expand(1, 8, 8)
+        # Regenerate old L tensor
+        color = 1 - self.representation[-7] # 0 means white, 1 means black
+        color = color.reshape(1, 8, 8).expand(1, 8, 8)
+        total_moves = self.representation[-6] - 1
+        total_moves = total_moves.reshape(1, 8, 8).expand(1, 8, 8)
+        white_king_castling = torch.ones(1, 8, 8) if self.board.has_kingside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8)
+        white_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8)
+        black_king_castling = torch.ones(1, 8, 8) if self.board.has_kingside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
+        black_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
+        no_progress = torch.Tensor([self.board.halfmove_clock]).reshape(1, 1, 1).expand(1, 8, 8)
 
-    #     L_tensor = torch.cat([color, total_moves, white_king_castling, white_queen_castling, black_king_castling, black_queen_castling, no_progress], 0)
+        L_tensor = torch.cat([color, total_moves, white_king_castling, white_queen_castling, black_king_castling, black_queen_castling, no_progress], 0)
 
-    #     # Remove last L channels
-    #     self.representation = self.representation[:-self.L]
+        # Remove last L channels
+        self.representation = self.representation[:-self.L]
 
-    #     # Add representation at the back
-    #     self.representation = torch.cat([self.representation, old_tensor, L_tensor], 0)
-
+        # Add representation at the back
+        self.representation = torch.cat([self.representation, old_tensor, L_tensor], 0)
+        
     # Function to temporarily get the board state N moves ago, then restore the current state
     def __get_past_board_tensor(self, board) -> torch.Tensor:
         # Make sure n does not exceed the current move count
-        n = self.T
+        n = self.T - 1
         n = min(n, len(board.move_stack))
         
         # Create a copy of the board for manipulation
@@ -464,10 +464,13 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
 # rep2 = chesser.get_representation()
 
 # # 14, 28, 42, 56, 70, 84, 98, 112
-# # 0 , 14, 28, 42, 56, 70, 84, 98    
+# # 0 , 14, 28, 42, 56, 70, 84, 98
+
+
 # for i in range(119):
 #     if not torch.all(rep1[i] == rep2[i]):
-#         print(i)
+#         print("expected", rep1[i])
+#         print("got", rep2[i])
 
 
 
