@@ -1,5 +1,6 @@
 import chess
 import torch
+import numpy as np
 from typing import List, Union, Tuple
 
 
@@ -145,6 +146,55 @@ class ChessTensor():
     def get_moves(self) -> List[chess.Move]:
         return list(self.board.legal_moves)
     
+
+    # New functions for mcts. State is of type board.
+    def get_initial_state(self):
+        return self.board
+    
+    def get_next_state(self, state, action, player=None):
+        state.push(action)
+        return state
+    
+    def get_valid_moves(self ,state):
+        return list(state.legal_moves)
+    
+    def check_win(self, state, action):
+        if action == None:
+            return False
+        
+        state.push(action)
+
+        if state.is_checkmate():
+            state.pop()
+            return True
+        else:
+            state.pop()
+            return False
+
+    def get_value_and_terminated(self, state, action):
+        if self.check_win(state, action):
+            return 1, True
+        if np.sum(self.get_valid_moves(state) == 0):
+            return 0, True
+        return 0, False
+    
+    def get_opponent(self, player):
+        return -player
+
+    def get_opponent_value(self, value):
+        return -value
+    
+    def change_perspective(self, state, player):
+        return state * player
+
+    def get_encoded_state(self, state):  # Something like get_rep, might delete function
+        encoded_state = np.stack(
+            (state == -1, state == 0, state == 1)
+        ).astype(np.float32)
+
+        return encoded_state
+    
+
 def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE) -> torch.tensor:
 
     moveTensor = torch.zeros(8*8*73)
@@ -335,6 +385,7 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
     move_str = f"{lettering[col]}{numbering[row]}{lettering[toCol]}{numbering[toRow]}{promotion}"
 
     return chess.Move.from_uci(move_str)
+
 
 # chesser = ChessTensor()
 
