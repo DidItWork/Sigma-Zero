@@ -105,11 +105,13 @@ class policyNN(nn.Module):
         self.fc_v1 = nn.Linear(64, 256)
         self.fc_v2 = nn.Linear(256, 1)
 
-        self.resnet_blocks = nn.Sequential()
+        self.resnet_blocks = []
 
         for _ in range(19):
 
             self.resnet_blocks.append(BasicBlock(256, 256, 1))
+
+        self.resnet_blocks = nn.Sequential(*self.resnet_blocks)
 
     def policy_head(self, x: tensor) -> tensor:
 
