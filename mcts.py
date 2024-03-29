@@ -25,16 +25,20 @@ class MCTS0:
     @torch.no_grad()
     def search(self, state, stateTensor):
 
+        # Define root node
+        root = Node(copy.deepcopy(self.game), self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
+
         # Selection
         for search in range(self.args['num_searches']):
 
-            # Define root node
-            root = Node(copy.deepcopy(self.game), self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
+            search_scope_game = copy.deepcopy(root.game)
             
             print("Searching iteration ", search)
             node = root
 
             while node.is_fully_expanded():
+                node.search_scope_game = search_scope_game
+                # print('selection occuring')
                 node = node.select()
             
             # print(node.state)
@@ -51,10 +55,10 @@ class MCTS0:
                 # print(valid_moves)
 
                 policy_mask = validActionsToTensor(valid_moves, node.color)
-
+                
                 policy, value = self.model(
                     # stateTensor.unsqueeze(0).to(device),
-                    node.game.get_representation().unsqueeze(0).to(device),
+                    search_scope_game.get_representation().unsqueeze(0).to(device),
                     policy_mask.unsqueeze(0)
                 )
 
@@ -82,8 +86,8 @@ class MCTS0:
         for child in root.children:
             action_probs[child.action_taken] = child.visit_count
         sum_values = sum(action_probs.values())
-        action_probs = {k: v / sum_values for k, v in action_probs.items()}
-        return action_probs
+        action_probs_2 = {k: v / sum_values for k, v in action_probs.items()}
+        return sum_values, action_probs, action_probs_2
 
 if __name__ == "__main__":
 
@@ -93,7 +97,7 @@ if __name__ == "__main__":
     model.eval()
     args = {
         'C': 2,
-        'num_searches': 100,
+        'num_searches': 800,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
