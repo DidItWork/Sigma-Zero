@@ -8,6 +8,18 @@ import copy
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+# FOR MAC SILICON USERS!!!!!!!!
+# if not torch.backends.mps.is_available():
+#     if not torch.backends.mps.is_built():
+#         print("MPS not available because the current PyTorch install was not "
+#             "built with MPS enabled.")
+#     else:
+#         print("MPS not available because the current MacOS version is not 12.3+ "
+#             "and/or you do not have an MPS-enabled device on this machine.")
+
+# else:
+#     device = torch.device("mps")
+
 class MCTS0:
     """
 
@@ -23,7 +35,7 @@ class MCTS0:
         self.model = model
 
     @torch.no_grad()
-    def search(self, state, stateTensor):
+    def search(self, state):
 
         # Define root node
         root = Node(copy.deepcopy(self.game), self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
@@ -87,7 +99,7 @@ class MCTS0:
             action_probs[child.action_taken] = child.visit_count
         sum_values = sum(action_probs.values())
         action_probs_2 = {k: v / sum_values for k, v in action_probs.items()}
-        return sum_values, action_probs, action_probs_2
+        return action_probs_2
 
 if __name__ == "__main__":
 
