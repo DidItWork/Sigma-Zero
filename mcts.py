@@ -86,8 +86,8 @@ class MCTS0:
         for child in root.children:
             action_probs[child.action_taken] = child.visit_count
         sum_values = sum(action_probs.values())
-        action_probs_2 = {k: v / sum_values for k, v in action_probs.items()}
-        return sum_values, action_probs, action_probs_2
+        action_probs = {k: v / sum_values for k, v in action_probs.items()}
+        return action_probs
 
 if __name__ == "__main__":
 
