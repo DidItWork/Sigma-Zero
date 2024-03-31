@@ -63,7 +63,7 @@ def play_game(model, args):
 
         # Save the state and action
         game_history['states'].append(state_tensor)
-        game_history['actions'].append(best_move) ### SHOULD THIS BE THE MOVE OR THE BEST_MOVE?
+        game_history['actions'].append(action_probs) ### SHOULD THIS BE THE MOVE OR THE BEST_MOVE?
         
         # Apply the move
         board.push(best_move)
@@ -137,10 +137,11 @@ def generate_training_data(model, num_games=1, args=None):
         # # Print the game history for debugging
         # print('game number:', _)
 
-        print(len(game_history['states']))
-        print(len(game_history['actions']))
-        print(len(game_history['rewards']))
-        print(game_history['rewards'])
+        # print(len(game_history['states']))
+        # print(len(game_history['actions']))
+        # print(len(game_history['rewards']))
+        # print(game_history['actions'])
+        # print(game_history['rewards'])
 
     return training_data
 

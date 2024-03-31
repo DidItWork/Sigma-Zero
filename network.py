@@ -1,6 +1,10 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from chess_tensor import actionsToTensor
+from random import shuffle
+from torch.optim import Adam
 from torch import tensor, Tensor
 from typing import Optional, Callable
 
@@ -107,6 +111,8 @@ class policyNN(nn.Module):
 
         self.resnet_blocks = []
 
+        self.optimiser = Adam(self.parameters(), lr=0.001, weight_decay=0.0001)
+
         for _ in range(19):
 
             self.resnet_blocks.append(BasicBlock(256, 256, 1))
@@ -133,7 +139,7 @@ class policyNN(nn.Module):
 
         return x   
 
-    def forward(self, x: tensor) -> tuple:
+    def forward(self, x: tensor, policy_mask: tensor = None) -> tuple:
 
         x = self.conv1(x)
         x = nn.ReLU()(x)
@@ -146,21 +152,69 @@ class policyNN(nn.Module):
 
         # print(x.shape, policy.shape)
 
-        # if policy_mask == None:
+        if policy_mask == None:
 
-        #     policy_mask = torch.ones(policy.shape)
+            policy_mask = torch.ones(policy.shape)
 
-        # #masked softmax
+        #masked softmax
 
-        # policy_exp = torch.exp(policy)*policy_mask
+        policy_exp = torch.exp(policy)*policy_mask
 
-        # policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
+        policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
 
-        # policy = policy_exp/policy_exp_sum
-
-        policy = nn.Softmax(dim=1)(policy)
+        policy = policy_exp/policy_exp_sum
 
         return (policy, value)
+    
+    def backward(self, training_data) -> None:
+        shuffle(training_data)
+        for index in range(len(training_data)):
+            game_history = training_data[index]
+            loss = torch.zeros(1).to("cuda")
+            for move in zip(game_history["states"], game_history["actions"], game_history["rewards"]):
+                # print(move)
+                # policy_mask = validActionsToTensor(move[1]).unsqueeze(0)
+                p, v = self.forward(move[0].unsqueeze(0).cuda())
+                p_target, v_target = actionsToTensor(move[1])[0], move[2]
+                p_target = torch.reshape(p_target, (p_target.size()[0], 1))
+                v_target = torch.tensor(v_target, dtype=torch.float32, device="cuda", requires_grad=True)
+                v = torch.tensor(v, dtype=torch.float32, device="cuda", requires_grad=True)
+                # print(p, v)
+                # print(p_target, v_target)
+                # print(p.size(), p_target.size())
+                # print(torch.log(p.to("cuda")).size())
+                move_loss = torch.sub(
+                        torch.pow(torch.sub(v_target.to("cuda"), v.to("cuda")), 2), 
+                        torch.matmul(torch.log(p.to("cuda")), p_target.to("cuda"))
+                )
+                print(move_loss)
+                # print(move_loss.size())
+                loss = torch.add(loss, move_loss)
+
+            self.optimiser.zero_grad()
+            loss.backward()
+            self.optimiser.step()
+
+
+
+
+
+        # for game_history in training_data:
+        #     # loss = torch.tensor()
+        #     for move in zip(game_history["states"], game_history["actions"], game_history["rewards"]):
+        #         p, v = self.forward(move[0].unsqueeze(0).cuda())
+        #         c = 2
+        #         print(p, v)
+        #         # print(self.parameters)
+        #         move_loss = torch.sub(
+        #             torch.pow((move[2] - v), 2), 
+        #             torch.add(
+        #                 (move[1].T * torch.log(p)), 
+        #                 (torch.mul(torch.pow(torch.abs(self.parameters), 2)), c)
+        #             )
+        #         )
+        #         print(move_loss)
+        #         print(move_loss.size())
 
 if __name__=="__main__":
 
@@ -178,5 +232,3 @@ if __name__=="__main__":
 
     print(policy)
     print(value)
-
-
