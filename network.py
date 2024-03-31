@@ -133,7 +133,7 @@ class policyNN(nn.Module):
 
         return x   
 
-    def forward(self, x: tensor, policy_mask: tensor = None) -> tuple:
+    def forward(self, x: tensor) -> tuple:
 
         x = self.conv1(x)
         x = nn.ReLU()(x)
@@ -146,17 +146,19 @@ class policyNN(nn.Module):
 
         # print(x.shape, policy.shape)
 
-        if policy_mask == None:
+        # if policy_mask == None:
 
-            policy_mask = torch.ones(policy.shape)
+        #     policy_mask = torch.ones(policy.shape)
 
-        #masked softmax
+        # #masked softmax
 
-        policy_exp = torch.exp(policy)*policy_mask
+        # policy_exp = torch.exp(policy)*policy_mask
 
-        policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
+        # policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
 
-        policy = policy_exp/policy_exp_sum
+        # policy = policy_exp/policy_exp_sum
+
+        policy = nn.Softmax(dim=1)(policy)
 
         return (policy, value)
 

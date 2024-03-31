@@ -1,7 +1,7 @@
 import chess
 import torch
 import numpy as np
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict
 
 
 """
@@ -261,24 +261,41 @@ class ChessTensor():
         return encoded_state
     
     
-def validActionsToTensor(valid_moves:List[chess.Move], color=chess.WHITE) -> torch.tensor:
+def actionsToTensor(valid_moves:Union[List[chess.Move], Dict[chess.Move, float]], color=chess.WHITE) -> torch.tensor:
     """
     Returns a vector mask of valid actions
     """
 
     #Initialize empty action tensor
     actionTensor = torch.zeros(73*8*8)
+    queen_promotion = dict()
+
+    if type(valid_moves) == dict:
+        dictionary = True
+    else:
+        dictionary = False
 
     for valid_move in valid_moves:
+        if valid_move.promotion == 5:
+            #queen_promotion
+            queen_promotion.update({
+                str(valid_move.uci()):True
+                })
+        
+        if dictionary:
+            prob = valid_moves[valid_move]
+        else:
+            prob = 1
+
         # print(valid_move)
         # print(actionToTensor(valid_move).nonzero())
         # print(tensorToAction(actionToTensor(valid_move)))
-        actionTensor += actionToTensor(valid_move, color)
+        actionTensor += actionToTensor(valid_move, color, prob=prob)
     
-    return actionTensor
+    return actionTensor, queen_promotion
     
 
-def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE) -> torch.tensor:
+def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE, prob:float=1) -> torch.tensor:
 
     moveTensor = torch.zeros(8*8*73)
 
@@ -351,7 +368,7 @@ def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE) -> torch.tens
                 i+=2
             
 
-            moveTensor[(64+i)*8*8+row*8+col] = 1
+            moveTensor[(64+i)*8*8+row*8+col] = prob
 
         else:
 
@@ -361,18 +378,18 @@ def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE) -> torch.tens
 
             # print(squares, direction)
 
-            moveTensor[(dir[direction]*7+(squares-1))*64+row*8+col] = 1
+            moveTensor[(dir[direction]*7+(squares-1))*64+row*8+col] = prob
 
     else:
 
         #Knight Move
 
-        moveTensor[(56+knight_moves[toCol-col,toRow-row])*64+row*8+col] = 1
+        moveTensor[(56+knight_moves[toCol-col,toRow-row])*64+row*8+col] = prob
     
     return moveTensor
 
 
-def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[chess.Move]:
+def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE, queen_promotion:dict={}) -> List[chess.Move]:
 
     #return all moves from tensor
 
@@ -383,7 +400,7 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
     # move = int(torch.argmax(moves).item())
 
     lettering = "abcdefgh"
-    numbering = [1,2,3,4,5,6,7,8]
+    numbering = "12345678"
 
     if color==chess.WHITE:
         numbering = numbering[::-1]
@@ -437,8 +454,8 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
             toCol = col+dir[direction][0]*squares
             toRow = row+dir[direction][1]*squares
 
-            # if toRow == 7 and board.piece_at(chess.Square(row*8+col)) in "pP":
-            #     promotion = "q"
+            if queen_promotion.get(lettering[col]+numbering[row]+lettering[toCol]+numbering[toRow]+"q", False):
+                promotion = "q"
         
         elif plane<64:
             #knight move
@@ -512,11 +529,15 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
     # #for testing
 
     # move = torch.zeros(8*8*73)
+    # move = torch.zeros(8*8*73)
 
+    # board = chess.Board()
     # board = chess.Board()
 
     # move[8*8*72] = 1
+    # move[8*8*72] = 1
 
+    # print(tensorToAction(move))
     # print(tensorToAction(move))
 
     # game = ChessTensor()
@@ -527,6 +548,26 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE) -> List[ch
     # print(board[14])
     # print("black\n",board[6])
     # print(board[20])
+    # game = ChessTensor()
+    # game.move_piece(chess.Move.from_uci("e2e4"))
+    # game.move_piece(chess.Move.from_uci("d7d6"))
+    # board = game.get_representation()
+    # print("white\n",board[0])
+    # print(board[14])
+    # print("black\n",board[6])
+    # print(board[20])
 
+    # move = chess.Move.from_uci("a1e5")
+    # print(tensorToAction(actionToTensor(move)))
+
+    action = chess.Move.from_uci("e7e8q")
+
+    action2 = chess.Move.from_uci("a7a8q")
+
+    at = actionToTensor(action,chess.WHITE)
+
+    at2 = actionToTensor(action2,chess.WHITE)
+
+    print(tensorToAction(at2,chess.WHITE, dict({action.uci():True, action2.uci():True})))
     # move = chess.Move.from_uci("a1e5")
     # print(tensorToAction(actionToTensor(move)))
