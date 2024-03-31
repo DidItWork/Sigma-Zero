@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from mctsnode import Node
-from chess_tensor import ChessTensor, actionToTensor, tensorToAction, validActionsToTensor
+from chess_tensor import ChessTensor, actionToTensor, tensorToAction, actionsToTensor
 from network import policyNN
 import chess
 import copy
@@ -66,21 +66,25 @@ class MCTS0:
 
                 # print(valid_moves)
 
-                policy_mask = validActionsToTensor(valid_moves, node.color)
+                policy_mask, queen_promotion = actionsToTensor(valid_moves, node.color)
                 
                 policy, value = self.model(
                     # stateTensor.unsqueeze(0).to(device),
-                    search_scope_game.get_representation().unsqueeze(0).to(device),
-                    policy_mask.unsqueeze(0)
+                    search_scope_game.get_representation().unsqueeze(0).to(device)
                 )
 
+                policy = policy.squeeze(0).detach() * policy_mask
+
+                policy /= torch.sum(policy)
+
                 policy = policy.squeeze(0)
+
                 value = value.item()
 
                 # print(policy.shape, policy, policy.nonzero())
                 # print(value)
 
-                valid_moves = tensorToAction(policy, node.color)
+                valid_moves = tensorToAction(policy, node.color, queen_promotion=queen_promotion)
 
                 probs = policy[policy.nonzero()]
 

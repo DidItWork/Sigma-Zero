@@ -5,8 +5,21 @@ import chess
 import numpy as np
 from mcts import MCTS0
 from network import policyNN
-from chess_tensor import ChessTensor
+from chess_tensor import ChessTensor, actionsToTensor
 import torch
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# FOR MAC SILICON GPU!!!!!!!!
+# if not torch.backends.mps.is_available():
+#     if not torch.backends.mps.is_built():
+#         print("MPS not available because the current PyTorch install was not "
+#             "built with MPS enabled.")
+#     else:
+#         print("MPS not available because the current MacOS version is not 12.3+ "
+#             "and/or you do not have an MPS-enabled device on this machine.")
+# else:
+#     device = torch.device("mps")
 
 def initialize_empty_boards():
     # Initialize with 7 empty boards
@@ -37,6 +50,9 @@ def play_game(model, args):
         # This function might need to be aware of whose turn it is
         # move = mcts.search(board) ############ IDK IF THIS FUNCTION ARGUMENT RECEIVES THE STATE TENSOR OR THE BOARD
         action_probs = mcts.search(board)
+
+        # action_tensor, _ = actionsToTensor(action_probs)
+
         best_move = max(action_probs, key=action_probs.get)
 
         # Convert the best move to UCI format if it's not already a string
@@ -129,18 +145,6 @@ def generate_training_data(model, num_games=1, args=None):
     return training_data
 
 if __name__ == "__main__":
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    # FOR MAC SILICON GPU!!!!!!!!
-    # if not torch.backends.mps.is_available():
-    #     if not torch.backends.mps.is_built():
-    #         print("MPS not available because the current PyTorch install was not "
-    #             "built with MPS enabled.")
-    #     else:
-    #         print("MPS not available because the current MacOS version is not 12.3+ "
-    #             "and/or you do not have an MPS-enabled device on this machine.")
-    # else:
-    #     device = torch.device("mps")
 
     config = dict()
     args = {
@@ -154,5 +158,5 @@ if __name__ == "__main__":
     model = policyNN(config).to(device)
     
     training_data = generate_training_data(model, num_games=1, args=args)
-    print(device)
+    # print(device)
     # Save or use the training data as needed
