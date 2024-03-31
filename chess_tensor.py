@@ -233,7 +233,7 @@ class ChessTensor():
 
     def get_value_and_terminated(self, state, color=chess.WHITE):
         if state.is_game_over():
-            winner = state.outcome().winner()
+            winner = state.outcome().winner
             if winner == None:
                 #Draw
                 return 0, True
