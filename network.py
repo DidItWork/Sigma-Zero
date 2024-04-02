@@ -170,7 +170,7 @@ class policyNN(nn.Module):
         shuffle(training_data)
         for index in range(len(training_data)):
             game_history = training_data[index]
-            loss = torch.zeros(1).to("cuda")
+            loss = torch.zeros(1).to("cuda").requires_grad_(True)
             for move in zip(game_history["states"], game_history["actions"], game_history["rewards"]):
                 # print(move)
                 # policy_mask = validActionsToTensor(move[1]).unsqueeze(0)
@@ -189,7 +189,8 @@ class policyNN(nn.Module):
                 )
                 print(move_loss)
                 # print(move_loss.size())
-                loss = torch.add(loss, move_loss)
+                if torch.any(move_loss.isnan()):
+                    loss = torch.add(loss, move_loss)
 
             self.optimiser.zero_grad()
             loss.backward()

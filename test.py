@@ -16,8 +16,8 @@ def main():
     print(policy)
     print(value)
 
-    network.load_state_dict(torch.load("./test.pt"))
-    network.optimiser.load_state_dict(torch.load("./opt.pt"))
+    network.load_state_dict(torch.load("./test3.pt"))
+    network.optimiser.load_state_dict(torch.load("./opt3.pt"))
     network.eval()
     policy, value = network(board)
 
