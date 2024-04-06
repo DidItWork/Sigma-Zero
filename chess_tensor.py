@@ -297,7 +297,7 @@ def actionsToTensor(valid_moves:Union[List[chess.Move], Dict[chess.Move, float]]
 
 def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE, prob:float=1) -> torch.tensor:
 
-    moveTensor = torch.zeros(8*8*73)
+    moveTensor = torch.zeros(8*8*73, requires_grad=False)
 
     dir = {
         (0,-1) : 0,

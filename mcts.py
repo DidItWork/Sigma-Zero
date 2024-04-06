@@ -35,7 +35,7 @@ class MCTS0:
         self.model = model
 
     @torch.no_grad()
-    def search(self, state):
+    def search(self, state, verbose=True):
 
         # Define root node
         root = Node(copy.deepcopy(self.game), self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
@@ -45,7 +45,7 @@ class MCTS0:
 
             search_scope_game = copy.deepcopy(root.game)
             
-            print("Searching iteration ", search)
+            if verbose: print("Searching iteration ", search)
             node = root
 
             while node.is_fully_expanded():
@@ -54,8 +54,8 @@ class MCTS0:
                 node = node.select()
             
             # print(node.state)
-            print("Searching node")
-            print(node.state, node.color)
+            if verbose: print("Searching node")
+            if verbose: print(node.state, node.color)
             
             value, is_terminal = node.game.get_value_and_terminated(node.state)
             value = node.game.get_opponent_value(value)
@@ -67,6 +67,8 @@ class MCTS0:
                 # print(valid_moves)
 
                 policy_mask, queen_promotion = actionsToTensor(valid_moves, node.color)
+
+                policy_mask = policy_mask.cuda()
                 
                 policy, value = self.model(
                     # stateTensor.unsqueeze(0).to(device),

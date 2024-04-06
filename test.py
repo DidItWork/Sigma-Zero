@@ -1,6 +1,6 @@
 import torch
 from network import policyNN
-from chess_tensor import ChessTensor
+from chess_tensor import ChessTensor, tensorToAction
 
 
 def main():
@@ -17,11 +17,14 @@ def main():
     print(value)
 
     network.load_state_dict(torch.load("./test3.pt"))
-    network.optimiser.load_state_dict(torch.load("./opt3.pt"))
+    # network.optimiser.load_state_dict(torch.load("./opt3.pt"))
     network.eval()
     policy, value = network(board)
 
+    actions = tensorToAction(policy.squeeze(0))
+
     print(policy)
+    print(actions)
     print(value)
     print("Test complete")
 

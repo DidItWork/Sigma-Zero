@@ -33,10 +33,11 @@ def play_game(model, args):
     """
     board = chess.Board()
     chess_tensor = ChessTensor()
-    
+
     game_history = {
         'states': [],
         'actions': [],
+        'colours': [],
         'rewards': [] # Rewards will be assigned later based on the game outcome
     }
     
@@ -49,7 +50,7 @@ def play_game(model, args):
         # Use MCTS to determine the best move
         # This function might need to be aware of whose turn it is
         # move = mcts.search(board) ############ IDK IF THIS FUNCTION ARGUMENT RECEIVES THE STATE TENSOR OR THE BOARD
-        action_probs = mcts.search(board)
+        action_probs = mcts.search(board, verbose=False)
 
         # action_tensor, _ = actionsToTensor(action_probs)
 
@@ -64,7 +65,7 @@ def play_game(model, args):
         # Save the state and action
         game_history['states'].append(state_tensor)
         game_history['actions'].append(action_probs) ### SHOULD THIS BE THE MOVE OR THE BEST_MOVE?
-        
+        game_history['colours'].append(board.turn)
         # Apply the move
         board.push(best_move)
         
@@ -122,7 +123,14 @@ def play_game(model, args):
 #     return mini_batches
 
 def generate_training_data(model, num_games=1, args=None):
-    training_data = []
+    # training_data = []
+
+    games_history = {
+        'states': [],
+        'actions': [],
+        'colours': [],
+        'rewards': [] # Rewards will be assigned later based on the game outcome
+    }
     
     # for _ in range(num_games):
     #     game_history = play_game(model)
@@ -132,7 +140,7 @@ def generate_training_data(model, num_games=1, args=None):
 
     for _ in range(num_games):
         game_history = play_game(model, args)
-        training_data.append(game_history)
+        # training_data.append(game_history)
 
         # # Print the game history for debugging
         # print('game number:', _)
@@ -143,7 +151,11 @@ def generate_training_data(model, num_games=1, args=None):
         # print(game_history['actions'])
         # print(game_history['rewards'])
 
-    return training_data
+        for key,value in game_history.items():
+
+            games_history[key] += value
+
+    return games_history
 
 if __name__ == "__main__":
 
