@@ -12,7 +12,7 @@ class Node:
         self.action_taken = action_taken
         self.prior = prior
         self.color = color
-        self.search_scope_game = search_scope_game
+        # self.search_scope_game = search_scope_game
 
         self.children = []
         
@@ -31,8 +31,8 @@ class Node:
             if ucb > best_ucb:
                 best_child = child
                 best_ucb = ucb
-        best_child.search_scope_game = self.search_scope_game
-        self.search_scope_game.move_piece(best_child.action_taken)
+        best_child.game = self.game
+        self.game.move_piece(best_child.action_taken)
         return best_child
     
     def get_ucb(self, child):

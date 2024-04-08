@@ -38,18 +38,17 @@ class MCTS0:
     def search(self, state, verbose=True):
 
         # Define root node
-        root = Node(copy.deepcopy(self.game), self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
+        root = Node(self.game, self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
 
         # Selection
         for search in range(self.args['num_searches']):
 
-            search_scope_game = copy.deepcopy(root.game)
+            root.game = copy.deepcopy(self.game)
             
             if verbose: print("Searching iteration ", search)
             node = root
 
             while node.is_fully_expanded():
-                node.search_scope_game = search_scope_game
                 # print('selection occuring')
                 node = node.select()
             
@@ -57,7 +56,7 @@ class MCTS0:
             if verbose: print("Searching node")
             if verbose: print(node.state, node.color)
             
-            value, is_terminal = node.game.get_value_and_terminated(node.state)
+            value, is_terminal = node.game.get_value_and_terminated()
             value = node.game.get_opponent_value(value)
 
             if not is_terminal:
@@ -68,11 +67,11 @@ class MCTS0:
 
                 policy_mask, queen_promotion = actionsToTensor(valid_moves, node.color)
 
-                policy_mask = policy_mask.cuda()
+                policy_mask = policy_mask.to(device)
                 
                 policy, value = self.model(
                     # stateTensor.unsqueeze(0).to(device),
-                    search_scope_game.get_representation().unsqueeze(0).to(device)
+                    game.get_representation().unsqueeze(0).to(device)
                 )
 
                 policy = policy.squeeze(0).detach() * policy_mask
@@ -115,7 +114,7 @@ if __name__ == "__main__":
     model.eval()
     args = {
         'C': 2,
-        'num_searches': 800,
+        'num_searches': 50,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
@@ -127,5 +126,5 @@ if __name__ == "__main__":
     
     boardTensor = game.get_representation()
     
-    print(mcts.search(game.board, boardTensor))
+    print(mcts.search(game.board))
     

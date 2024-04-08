@@ -231,13 +231,13 @@ class ChessTensor():
     #         state.pop()
     #         return False
 
-    def get_value_and_terminated(self, state, color=chess.WHITE):
-        if state.is_game_over():
-            winner = state.outcome().winner
+    def get_value_and_terminated(self):
+        if self.board.is_game_over():
+            winner = self.board.outcome().winner
             if winner == None:
                 #Draw
                 return 0, True
-            elif winner == color:
+            elif winner == self.board.turn:
                 return 1, True
             else:
                 return -1, True

@@ -12,6 +12,8 @@ Copied from pytorch implementation of resnet
 https://pytorch.org/vision/stable/_modules/torchvision/models/resnet.html
 """
 
+device = "cuda" if torch.cuda.is_available else "cpu"
+
 def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
     """3x3 convolution with padding"""
     return nn.Conv2d(
@@ -173,11 +175,11 @@ if __name__=="__main__":
 
     config = dict()
 
-    network = policyNN(config).to("cuda")
+    network = policyNN(config).to(device)
 
     game = ChessTensor()
 
-    board = game.get_representation().unsqueeze(0).cuda()
+    board = game.get_representation().unsqueeze(0).to(device)
 
     policy, value = network(board)
 

@@ -5,6 +5,8 @@ from torch.optim import Adam
 from torch.utils.data import Dataset, DataLoader
 from chess_tensor import actionsToTensor
 
+device = "cuda" if torch.cuda.is_available else "cpu"
+
 class chessDataset(Dataset):
 
     def __init__(self, training_data):
@@ -57,10 +59,10 @@ def train(model=None, dataloader=None, optimiser=None) -> None:
         # policy_mask = validActionsToTensor(move[1]).unsqueeze(0)
 
         # print(batch["states"])
-        p, v = model(batch["states"].cuda())
+        p, v = model(batch["states"].to(device))
         v = v.squeeze(-1)
-        p_target = batch["actions"].cuda()
-        v_target = batch["rewards"].cuda()
+        p_target = batch["actions"].to(device)
+        v_target = batch["rewards"].to(device)
 
         # print(p.shape, p_target.shape)
         # print(v.shape, v_target.shape)
@@ -109,7 +111,6 @@ def train(model=None, dataloader=None, optimiser=None) -> None:
     #         print(move_loss.size())
 
 def main():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     model = policyNN(config=dict()).to(device)
     optimiser = Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
     model.train()
