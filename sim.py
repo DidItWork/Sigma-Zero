@@ -50,7 +50,7 @@ def play_game(model, args):
         # Use MCTS to determine the best move
         # This function might need to be aware of whose turn it is
         # move = mcts.search(board) ############ IDK IF THIS FUNCTION ARGUMENT RECEIVES THE STATE TENSOR OR THE BOARD
-        action_probs = mcts.search(board, verbose=False)
+        action_probs = mcts.search(board, verbose=True)
 
         # action_tensor, _ = actionsToTensor(action_probs)
 

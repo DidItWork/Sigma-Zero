@@ -71,7 +71,7 @@ class MCTS0:
                 
                 policy, value = self.model(
                     # stateTensor.unsqueeze(0).to(device),
-                    game.get_representation().unsqueeze(0).to(device)
+                    node.game.get_representation().unsqueeze(0).to(device)
                 )
 
                 policy = policy.squeeze(0).detach() * policy_mask

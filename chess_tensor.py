@@ -522,7 +522,7 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE, queen_prom
 
 
 
-# if __name__=="__main__":
+if __name__=="__main__":
 
     # pass
 

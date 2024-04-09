@@ -1,7 +1,7 @@
 import torch
 from network import policyNN
 from sim import generate_training_data
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.utils.data import Dataset, DataLoader
 from chess_tensor import actionsToTensor
 
@@ -59,10 +59,13 @@ def train(model=None, dataloader=None, optimiser=None) -> None:
         # policy_mask = validActionsToTensor(move[1]).unsqueeze(0)
 
         # print(batch["states"])
+
         p, v = model(batch["states"].to(device))
         v = v.squeeze(-1)
         p_target = batch["actions"].to(device)
         v_target = batch["rewards"].to(device)
+        # print("value",v)
+        # print("v_target",v_target)
 
         # print(p.shape, p_target.shape)
         # print(v.shape, v_target.shape)
@@ -112,43 +115,49 @@ def train(model=None, dataloader=None, optimiser=None) -> None:
 
 def main():
     model = policyNN(config=dict()).to(device)
-    optimiser = Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
     model.train()
     num_epochs = 500
+    num_games = 1
     args = {
         'C': 2,
         'num_searches': 10,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
-        'batch_size': 16
+        'batch_size': 32
     }
     
     # for batch in training_dataloader:
     #     print(batch)
 
-    training_data = generate_training_data(model, num_games=1, args=args)
+    for game in range(num_games):
 
-    training_dataset = chessDataset(training_data=training_data)
+        optimiser = SGD(model.parameters(), lr=1e-2, weight_decay=1e-4)
 
-    training_dataloader = DataLoader(dataset=training_dataset,
-                                    batch_size=args['batch_size'],
-                                    shuffle=True,
-                                    num_workers=2,
-                                    collate_fn=training_dataset.collatefn,
-                                    drop_last=True)
+        training_data = generate_training_data(model, num_games=1, args=args)
 
-    for epoch in range(num_epochs):
+        training_dataset = chessDataset(training_data=training_data)
 
-        print(f"Epopch {epoch}")
+        training_dataloader = DataLoader(dataset=training_dataset,
+                                        batch_size=args['batch_size'],
+                                        shuffle=True,
+                                        num_workers=2,
+                                        collate_fn=training_dataset.collatefn,
+                                        drop_last=True)
 
-        train(model=model, dataloader=training_dataloader, optimiser=optimiser)
+        for epoch in range(num_epochs):
 
-        # print(f"Epoch {epoch} training complete")
+            print(f"Epoch {epoch}")
 
-    torch.save(model.state_dict(), "./test3.pt")
-    torch.save(optimiser.state_dict(), "./opt3.pt")
-    print("Training complete")
+            # print(model.conv1.weight)
+
+            train(model=model, dataloader=training_dataloader, optimiser=optimiser)
+
+            # print(f"Epoch {epoch} training complete")
+
+        torch.save(model.state_dict(), "./test3.pt")
+        torch.save(optimiser.state_dict(), "./opt3.pt")
+        print("Training complete")
 
 
 if __name__ == "__main__":

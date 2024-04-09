@@ -105,8 +105,10 @@ class policyNN(nn.Module):
 
         self.conv_p1 = nn.Conv2d(256, 256, kernel_size=1)
         self.conv_p2 = nn.Conv2d(256, 73, kernel_size=1)
+        self.p_norm = nn.BatchNorm2d(73)
 
         self.conv_v1 = nn.Conv2d(256, 1, kernel_size=1)
+        self.v_norm = nn.BatchNorm2d(1)
         self.fc_v1 = nn.Linear(64, 256)
         self.fc_v2 = nn.Linear(256, 1)
 
@@ -121,8 +123,9 @@ class policyNN(nn.Module):
     def policy_head(self, x: tensor) -> tensor:
 
         x = self.conv_p1(x)
-        x = nn.ReLU()(x)
         x = self.conv_p2(x)
+        x = self.p_norm(x)
+        x = nn.ReLU()(x)
         x = torch.flatten(x, start_dim=1)
 
         return x
@@ -130,6 +133,7 @@ class policyNN(nn.Module):
     def value_head(self, x: tensor) -> tensor:
 
         x = self.conv_v1(x)
+        x = self.v_norm(x)
         x = nn.ReLU()(x)
         x = torch.flatten(x, start_dim=1)
         x = self.fc_v1(x)
