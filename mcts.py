@@ -54,42 +54,48 @@ class MCTS0:
             
             # print(node.state)
             if verbose: print("Searching node")
-            if verbose: print(node.state, node.color)
+            if verbose: print(node.game.board, node.color)
             
             value, is_terminal = node.game.get_value_and_terminated()
-            value = node.game.get_opponent_value(value)
+            # value = node.game.get_opponent_value(value)
 
             if not is_terminal:
 
-                valid_moves = node.game.get_valid_moves(node.state)
+                if len(node.children)==0:
 
-                # print(valid_moves)
+                    valid_moves = node.game.get_valid_moves(node.game.board)
 
-                policy_mask, queen_promotion = actionsToTensor(valid_moves, node.color)
+                    # print(valid_moves)
 
-                policy_mask = policy_mask.to(device)
+                    policy_mask, queen_promotion = actionsToTensor(valid_moves, node.color)
+
+                    policy_mask = policy_mask.to(device)
+                    
+                    policy, value = self.model(
+                        # stateTensor.unsqueeze(0).to(device),
+                        node.game.get_representation().unsqueeze(0).to(device)
+                    )
+
+                    policy = policy.squeeze(0).detach() * policy_mask
+
+                    policy /= torch.sum(policy)
+
+                    policy = policy.squeeze(0)
+
+                    value = value.item()
+
+                    # print(policy.shape, policy, policy.nonzero())
+                    # print(value)
+
+                    valid_moves = tensorToAction(policy, node.color, queen_promotion=queen_promotion)
+
+                    probs = policy[policy.nonzero()]
+
+                    policy_list = list(zip(valid_moves, probs))
                 
-                policy, value = self.model(
-                    # stateTensor.unsqueeze(0).to(device),
-                    node.game.get_representation().unsqueeze(0).to(device)
-                )
+                else:
 
-                policy = policy.squeeze(0).detach() * policy_mask
-
-                policy /= torch.sum(policy)
-
-                policy = policy.squeeze(0)
-
-                value = value.item()
-
-                # print(policy.shape, policy, policy.nonzero())
-                # print(value)
-
-                valid_moves = tensorToAction(policy, node.color, queen_promotion=queen_promotion)
-
-                probs = policy[policy.nonzero()]
-
-                policy_list = list(zip(valid_moves, probs))
+                    policy_list = None
 
                 # print(policy_list)
 
@@ -99,8 +105,10 @@ class MCTS0:
             node.backpropagate(value)
 
         # Return visit counts
+        # If number of simulations is too low, none of the root's children may be visited
         action_probs = {}
-        for child in root.children:
+        for i in root.explored:
+            child = root.children[i]
             action_probs[child.action_taken] = child.visit_count
         sum_values = sum(action_probs.values())
         action_probs = {k: v / sum_values for k, v in action_probs.items()}
@@ -114,7 +122,7 @@ if __name__ == "__main__":
     model.eval()
     args = {
         'C': 2,
-        'num_searches': 50,
+        'num_searches': 200,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,

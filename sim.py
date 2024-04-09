@@ -42,15 +42,20 @@ def play_game(model, args):
     }
     
     while not board.is_game_over():
-        mcts = MCTS0(game=chess_tensor, model=model, args=args)  # Create a new MCTS object for every turn
 
+        print(board)
+
+        print()
+
+        mcts = MCTS0(game=chess_tensor, model=model, args=args)  # Create a new MCTS object for every turn
+    
         # Convert the current board state to a tensor
         state_tensor = chess_tensor.get_representation()
         
         # Use MCTS to determine the best move
         # This function might need to be aware of whose turn it is
         # move = mcts.search(board) ############ IDK IF THIS FUNCTION ARGUMENT RECEIVES THE STATE TENSOR OR THE BOARD
-        action_probs = mcts.search(board, verbose=True)
+        action_probs = mcts.search(board, verbose=False)
 
         # action_tensor, _ = actionsToTensor(action_probs)
 
@@ -71,9 +76,12 @@ def play_game(model, args):
         
         # Update the chess tensor with the new move
         chess_tensor.move_piece(best_move)
+        
+    print(board)
 
     # Determine the game result and assign rewards
     result = board.result()
+    print("Result", result)
     reward = 0
     if result == '1-0':  # White wins
         reward = 1

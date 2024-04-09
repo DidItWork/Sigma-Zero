@@ -115,12 +115,14 @@ def train(model=None, dataloader=None, optimiser=None) -> None:
 
 def main():
     model = policyNN(config=dict()).to(device)
-    model.train()
-    num_epochs = 500
-    num_games = 1
+    # pretrained_weights = torch.load("test3.pt")
+    # model.load_state_dict(pretrained_weights)
+    
+    num_epochs = 50
+    num_games = 20
     args = {
         'C': 2,
-        'num_searches': 10,
+        'num_searches': 100,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
@@ -130,11 +132,15 @@ def main():
     # for batch in training_dataloader:
     #     print(batch)
 
+    optimiser = SGD(model.parameters(), lr=0.2, weight_decay=1e-4)
+
     for game in range(num_games):
 
-        optimiser = SGD(model.parameters(), lr=1e-2, weight_decay=1e-4)
+        print(f"Game {game}")
 
-        training_data = generate_training_data(model, num_games=1, args=args)
+        model.eval()
+
+        training_data = generate_training_data(model, num_games=2, args=args)
 
         training_dataset = chessDataset(training_data=training_data)
 
@@ -144,6 +150,7 @@ def main():
                                         num_workers=2,
                                         collate_fn=training_dataset.collatefn,
                                         drop_last=True)
+        model.train()
 
         for epoch in range(num_epochs):
 
@@ -157,7 +164,7 @@ def main():
 
         torch.save(model.state_dict(), "./test3.pt")
         torch.save(optimiser.state_dict(), "./opt3.pt")
-        print("Training complete")
+        # print("Training complete")
 
 
 if __name__ == "__main__":

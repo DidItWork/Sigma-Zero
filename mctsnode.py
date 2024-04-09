@@ -7,26 +7,31 @@ class Node:
     def __init__(self, game, args, state, parent=None, action_taken=None, prior=0, color=chess.WHITE, search_scope_game=None):
         self.game = game
         self.args = args
-        self.state = copy.deepcopy(state)
+        # self.state = copy.deepcopy(state)
         self.parent = parent
         self.action_taken = action_taken
         self.prior = prior
         self.color = color
         # self.search_scope_game = search_scope_game
 
+        #list of all children nodes
         self.children = []
+
+        #list of all explored children nodes
+        self.explored = []
         
         self.visit_count = 0
         self.value_sum = 0
     
     def is_fully_expanded(self):
-        return len(self.children) > 0
+        return len(self.children)>0 and len(self.children) == len(self.explored)
     
     def select(self):
         best_child = None
         best_ucb = -np.inf
 
-        for child in self.children:
+        for i in self.explored:
+            child = self.children[i]
             ucb = self.get_ucb(child)
             if ucb > best_ucb:
                 best_child = child
@@ -51,20 +56,27 @@ class Node:
         """
         Reeived policy as a list of tuples (action, prob)
         """
+        if policy is not None:
 
-        for action, prob in policy:
-            # if prob > 0:
-            # print(self.state)
-            # print(action, prob)
+            for action, prob in policy:
+                # if prob > 0:
+                # print(self.state)
+                # print(action, prob)
 
-            child_state = copy.deepcopy(self.state)
+                # child_state = copy.deepcopy(self.state)
 
-            child_state = self.game.get_next_state(child_state, action, 1)
-            # child_state = self.game.change_perspective(child_state, player=-1)
+                # child_state = self.game.get_next_state(child_state, action, 1)
+                # child_state = self.game.change_perspective(child_state, player=-1)
 
-            child = Node(self.game, self.args, child_state, self, action, prob, color=not self.color)
-            self.children.append(child)
-        return child
+                child = Node(self.game, self.args, None, self, action, prob, color=not self.color)
+                self.children.append(child)
+
+            self.explored.append(np.random.randint(len(self.children)))
+        
+        else:
+
+            rand_child = np.random.choice([i for i in range(len(self.children)) if i not in self.explored])
+            self.explored.append(rand_child)
     
     def backpropagate(self, value):
         self.value_sum += value
