@@ -24,6 +24,8 @@ L = 7
     1 for no-progress count
 """
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 class ChessTensor():
     def __init__(self, chess960=False):
         self.M = 14
@@ -364,7 +366,7 @@ def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE, prob:float=1)
             
             elif toCol<col:
 
-                #Right Diagonal Capture
+                #Left Diagonal Capture
                 i+=2
             
 
@@ -560,14 +562,14 @@ if __name__=="__main__":
     # move = chess.Move.from_uci("a1e5")
     # print(tensorToAction(actionToTensor(move)))
 
-    action = chess.Move.from_uci("e7e8q")
+    action = chess.Move.from_uci("e7e8n")
 
-    action2 = chess.Move.from_uci("a7a8q")
+    action2 = chess.Move.from_uci("e2d1r")
 
-    at = actionToTensor(action,chess.WHITE)
+    at = actionToTensor(action,chess.BLACK)
 
-    at2 = actionToTensor(action2,chess.WHITE)
+    at2 = actionToTensor(action2,chess.BLACK)
 
-    print(tensorToAction(at2,chess.WHITE, dict({action.uci():True, action2.uci():True})))
+    print(tensorToAction(at2,chess.BLACK, dict({action.uci():True, action2.uci():True})))
     # move = chess.Move.from_uci("a1e5")
     # print(tensorToAction(actionToTensor(move)))

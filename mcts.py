@@ -5,6 +5,7 @@ from chess_tensor import ChessTensor, actionToTensor, tensorToAction, actionsToT
 from network import policyNN
 import chess
 import copy
+import time
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -32,7 +33,8 @@ class MCTS0:
                  model=None):
         self.game = game
         self.args = args # args = ['C', 'num_searches', 'num_iterations', 'num_selfPlay_iterations', 'num_epochs', 'batch_size']
-        self.model = model
+        self.model = model.to(device)
+        self.noise_distribution = torch.distributions.dirichlet.Dirichlet
 
     @torch.no_grad()
     def search(self, state, verbose=True):
@@ -42,15 +44,21 @@ class MCTS0:
 
         # Selection
         for search in range(self.args['num_searches']):
-
-            root.game = copy.deepcopy(self.game)
             
             if verbose: print("Searching iteration ", search)
             node = root
 
+            # t1 = time.perf_counter()
+
             while node.is_fully_expanded():
                 # print('selection occuring')
                 node = node.select()
+
+            # t2 = time.perf_counter()
+
+            if node.parent is not None:
+                node.game = copy.deepcopy(node.parent.game)
+                node.game.move_piece(node.action_taken)
             
             # print(node.state)
             if verbose: print("Searching node")
@@ -59,9 +67,13 @@ class MCTS0:
             value, is_terminal = node.game.get_value_and_terminated()
             # value = node.game.get_opponent_value(value)
 
+            # print(f"Selection time: {t2-t1}")
+
             if not is_terminal:
 
                 if len(node.children)==0:
+
+                    # t2_1 = time.perf_counter()
 
                     valid_moves = node.game.get_valid_moves(node.game.board)
 
@@ -69,29 +81,39 @@ class MCTS0:
 
                     policy_mask, queen_promotion = actionsToTensor(valid_moves, node.color)
 
-                    policy_mask = policy_mask.to(device)
+                    policy_mask = policy_mask
                     
                     policy, value = self.model(
                         # stateTensor.unsqueeze(0).to(device),
                         node.game.get_representation().unsqueeze(0).to(device)
                     )
 
-                    policy = policy.squeeze(0).detach() * policy_mask
+                    # print(torch.max(policy)-torch.min(policy), value)
+
+                    # print(policy.device, value.device, policy.requires_grad, value.requires_grad)
+
+                    policy = policy.squeeze(0).detach().cpu() * policy_mask
 
                     policy /= torch.sum(policy)
 
                     policy = policy.squeeze(0)
 
-                    value = value.item()
+                    node.value = value.item()
 
                     # print(policy.shape, policy, policy.nonzero())
                     # print(value)
+
+                    # t2_2 = time.perf_counter()
 
                     valid_moves = tensorToAction(policy, node.color, queen_promotion=queen_promotion)
 
                     probs = policy[policy.nonzero()]
 
                     policy_list = list(zip(valid_moves, probs))
+
+                    # t2_3 = time.perf_counter()
+
+                    # print(f"Model time: {t2_3-t2}")
                 
                 else:
 
@@ -100,18 +122,37 @@ class MCTS0:
                 # print(policy_list)
 
                 node.expand(policy_list)  # Expansion
+                
+                # t2_4 = time.perf_counter()
+
+                # print(f"Loop time: {t2_4-t2}")
+            
+            else:
+
+                node.value = value
 
             # Backpropagation
-            node.backpropagate(value)
+            # print("Val", node.value)
+            node.backpropagate(node.value)
+
+            # t3 = time.perf_counter()
+
+            # print(f"Search time: {t3-t1}")
 
         # Return visit counts
         # If number of simulations is too low, none of the root's children may be visited
         action_probs = {}
-        for i in root.explored:
-            child = root.children[i]
+        for child in root.children:
             action_probs[child.action_taken] = child.visit_count
+
+        n_moves = torch.full((len(root.children),), 0.3)
+        noise = self.noise_distribution(n_moves).sample()
+        # print(noise, torch.sum(noise))
+        
         sum_values = sum(action_probs.values())
-        action_probs = {k: v / sum_values for k, v in action_probs.items()}
+        action_probs = {k: (v / (sum_values +1e-7) + noise[i].item())/2 for i, (k, v) in enumerate(action_probs.items())}
+        # print(action_probs)
+        
         return action_probs
 
 if __name__ == "__main__":

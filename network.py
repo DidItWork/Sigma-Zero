@@ -134,6 +134,7 @@ class policyNN(nn.Module):
 
         x = self.conv_v1(x)
         x = self.v_norm(x)
+
         x = nn.ReLU()(x)
         x = torch.flatten(x, start_dim=1)
         x = self.fc_v1(x)
@@ -145,6 +146,7 @@ class policyNN(nn.Module):
     def forward(self, x: tensor) -> tuple:
 
         x = self.conv1(x)
+
         x = nn.ReLU()(x)
 
         x = self.resnet_blocks(x)
@@ -166,8 +168,6 @@ class policyNN(nn.Module):
         # policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
 
         # policy = policy_exp/policy_exp_sum
-
-        # print(policy)
 
         policy = nn.Softmax(dim=1)(policy)
 

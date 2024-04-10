@@ -4,6 +4,8 @@ from sim import generate_training_data
 from torch.optim import Adam, SGD
 from torch.utils.data import Dataset, DataLoader
 from chess_tensor import actionsToTensor
+import time
+import torch.multiprocessing as mp
 
 device = "cuda" if torch.cuda.is_available else "cpu"
 
@@ -14,20 +16,17 @@ class chessDataset(Dataset):
         self.states = training_data["states"]
         self.actions = training_data["actions"]
         self.rewards = training_data["rewards"]
-        self.colours = training_data["colours"]
 
     def __len__(self):
         return len(self.states)
     
     def __getitem__(self, index):
 
-        actionTensor = actionsToTensor(self.actions[index], color=self.colours[index])[0]
-
-        actionTensor.requires_grad = False
+        # actionTensor = actionsToTensor(self.actions[index], color=self.colours[index])[0]
 
         reward = torch.tensor(self.rewards[index], requires_grad = False)
 
-        return self.states[index], actionTensor, reward
+        return self.states[index], self.actions[index], reward
     
     @staticmethod
     def collatefn(batch):
@@ -64,10 +63,6 @@ def train(model=None, dataloader=None, optimiser=None) -> None:
         v = v.squeeze(-1)
         p_target = batch["actions"].to(device)
         v_target = batch["rewards"].to(device)
-        # print("value",v)
-        # print("v_target",v_target)
-
-        # print(p.shape, p_target.shape)
         # print(v.shape, v_target.shape)
         # p_target = torch.reshape(p_target, (p_target.size()[0], 1))
 
@@ -113,48 +108,94 @@ def train(model=None, dataloader=None, optimiser=None) -> None:
     #         print(move_loss)
     #         print(move_loss.size())
 
+def hw():
+    print("Hello World!")
+
 def main():
-    model = policyNN(config=dict()).to(device)
+    model = policyNN(config=dict())
     # pretrained_weights = torch.load("test3.pt")
     # model.load_state_dict(pretrained_weights)
     
-    num_epochs = 50
-    num_games = 20
+    generate_step = 10000
+    num_steps = 200000
+    num_games = 210
+    num_process = 7
     args = {
         'C': 2,
-        'num_searches': 100,
+        'num_searches': 50,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
-        'batch_size': 32
+        'batch_size': 64
     }
     
     # for batch in training_dataloader:
     #     print(batch)
 
-    optimiser = SGD(model.parameters(), lr=0.2, weight_decay=1e-4)
+    mp.set_start_method('spawn', force=True)
 
-    for game in range(num_games):
+    optimiser = SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)
 
-        print(f"Game {game}")
+    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimiser, num_steps//generate_step*5)
+
+    for epoch in range(num_steps//generate_step):
+
+        print("Epoch", epoch)
+
+        t1 = time.perf_counter()
+
+        model = model.cpu()
 
         model.eval()
 
-        training_data = generate_training_data(model, num_games=2, args=args)
+        manager = mp.Manager()
+        return_dict = manager.dict()
+            
+        processes = []
+
+        for i in range(num_process):
+
+            processes.append(mp.Process(target = generate_training_data, args=(model, num_games//num_process, args, return_dict)))
+
+
+        # training_data = generate_training_data(model, num_games, args)
+
+        for p in processes:
+            p.start()
+
+        for p in processes:
+            p.join()
+
+        
+
+        training_data = {
+            'states': [],
+            'actions': [],
+            'rewards': []
+        }
+
+        # print(return_dict)
+
+        for game_dict in return_dict.values():
+
+            for key in training_data:
+                training_data[key] += game_dict[key]
+        
+        # print(training_data)
 
         training_dataset = chessDataset(training_data=training_data)
 
         training_dataloader = DataLoader(dataset=training_dataset,
                                         batch_size=args['batch_size'],
                                         shuffle=True,
-                                        num_workers=2,
+                                        num_workers=4,
                                         collate_fn=training_dataset.collatefn,
                                         drop_last=True)
+
         model.train()
+        model = model.to(device)
 
-        for epoch in range(num_epochs):
-
-            print(f"Epoch {epoch}")
+        for steps in range(generate_step//len(training_dataloader)):
 
             # print(model.conv1.weight)
 
@@ -162,10 +203,18 @@ def main():
 
             # print(f"Epoch {epoch} training complete")
 
-        torch.save(model.state_dict(), "./test3.pt")
-        torch.save(optimiser.state_dict(), "./opt3.pt")
-        # print("Training complete")
+        num_searches = args["num_searches"]
+        batch_size = args["batch_size"]
 
+        torch.save(model.state_dict(), f"./saves/train_{num_searches}_{batch_size}_{epoch}.pt")
+        torch.save(optimiser.state_dict(), f"./saves/opt_{num_searches}_{batch_size}_{epoch}.pt")
+
+        t2 = time.perf_counter()
+
+        print(f"Time taken: {t2-t1:0.4f} seconds")
+
+    print("Training complete")
+    
 
 if __name__ == "__main__":
     main()

@@ -7,6 +7,8 @@ from mcts import MCTS0
 from network import policyNN
 from chess_tensor import ChessTensor, actionsToTensor
 import torch
+import time
+import os
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -37,45 +39,50 @@ def play_game(model, args):
     game_history = {
         'states': [],
         'actions': [],
-        'colours': [],
         'rewards': [] # Rewards will be assigned later based on the game outcome
     }
     
     while not board.is_game_over():
 
-        print(board)
+        # print("ID of process running worker1: {}".format(os.getpid()))
+        # print(board)
 
-        print()
+        t1 = time.perf_counter()
 
         mcts = MCTS0(game=chess_tensor, model=model, args=args)  # Create a new MCTS object for every turn
     
         # Convert the current board state to a tensor
         state_tensor = chess_tensor.get_representation()
+
+        t2 = time.perf_counter()
         
         # Use MCTS to determine the best move
         # This function might need to be aware of whose turn it is
         # move = mcts.search(board) ############ IDK IF THIS FUNCTION ARGUMENT RECEIVES THE STATE TENSOR OR THE BOARD
         action_probs = mcts.search(board, verbose=False)
 
-        # action_tensor, _ = actionsToTensor(action_probs)
+        t3 = time.perf_counter()
 
         best_move = max(action_probs, key=action_probs.get)
 
-        # Convert the best move to UCI format if it's not already a string
-        # best_move_uci = best_move.uci() if isinstance(best_move, chess.Move) else best_move
-        
-        # move = chess.Move.from_uci(best_move)
+        action_tensor = actionsToTensor(action_probs, color=board.turn)[0]
 
+        action_tensor.requires_grad = False
 
         # Save the state and action
         game_history['states'].append(state_tensor)
-        game_history['actions'].append(action_probs) ### SHOULD THIS BE THE MOVE OR THE BEST_MOVE?
-        game_history['colours'].append(board.turn)
+        game_history['actions'].append(action_tensor) ### SHOULD THIS BE THE MOVE OR THE BEST_MOVE?
+        
         # Apply the move
         board.push(best_move)
         
         # Update the chess tensor with the new move
         chess_tensor.move_piece(best_move)
+
+        t4 = time.perf_counter()
+
+        #debug code
+        # print(f"Init time: {t2-t1}\nSearch time: {t3-t2}\nMove time: {t4-t3}\nLoop time: {t4-t1}")
         
     print(board)
 
@@ -130,13 +137,12 @@ def play_game(model, args):
     
 #     return mini_batches
 
-def generate_training_data(model, num_games=1, args=None):
+def generate_training_data(model, num_games=1, args=None, return_dict=None):
     # training_data = []
 
     games_history = {
         'states': [],
         'actions': [],
-        'colours': [],
         'rewards': [] # Rewards will be assigned later based on the game outcome
     }
     
@@ -146,7 +152,8 @@ def generate_training_data(model, num_games=1, args=None):
     #     mini_batches = generate_mini_batches(game_history, result)
     #     training_data.extend(mini_batches)
 
-    for _ in range(num_games):
+    for i in range(num_games):
+        print(f"Game {i+1}/{num_games}")
         game_history = play_game(model, args)
         # training_data.append(game_history)
 
@@ -162,6 +169,9 @@ def generate_training_data(model, num_games=1, args=None):
         for key,value in game_history.items():
 
             games_history[key] += value
+
+    if return_dict is not None:
+        return_dict[os.getpid()]=games_history
 
     return games_history
 

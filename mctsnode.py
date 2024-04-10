@@ -1,7 +1,8 @@
 import numpy as np
 import math
-import copy
+import torch
 import chess
+import time
 
 class Node:
     def __init__(self, game, args, state, parent=None, action_taken=None, prior=0, color=chess.WHITE, search_scope_game=None):
@@ -21,35 +22,53 @@ class Node:
         self.explored = []
         
         self.visit_count = 0
-        self.value_sum = 0
+        self.value_sum = .0
+        self.value = .0 #state value
     
     def is_fully_expanded(self):
         return len(self.children)>0 and len(self.children) == len(self.explored)
     
     def select(self):
-        best_child = None
-        best_ucb = -np.inf
 
-        for i in self.explored:
-            child = self.children[i]
-            ucb = self.get_ucb(child)
-            if ucb > best_ucb:
-                best_child = child
-                best_ucb = ucb
-        best_child.game = self.game
-        self.game.move_piece(best_child.action_taken)
-        return best_child
+        # print("selecting", len(self.explored))
+
+        t1 = time.perf_counter()
+
+        vc = torch.tensor([child.visit_count for child in self.children])
+        vsum = torch.tensor([child.value_sum for child in self.children])
+        prior = torch.tensor([child.prior for child in self.children])
+
+        t2 = time.perf_counter()
+
+        # for i in self.explored:
+        #     t1 = time.perf_counter()
+        #     ucb = self.get_ucb(self.children[i])
+        #     if ucb > best_ucb:
+        #         best_child = i
+        #         best_ucb = ucb
+        # # best_child.game = self.game
+        # # self.game.move_piece(best_child.action_taken)
+        #     t2 = time.perf_counter()
+        #     print(f"Selection loop time: {t2-t1}")
+
+        ucb = self.get_ucb(vc, vsum, prior)
+
+        return self.children[torch.argmax(ucb).item()]
     
-    def get_ucb(self, child):
-        if child.visit_count == 0:
-            q_value = 0
-        else:
-            q_value = 1 - ((child.value_sum / child.visit_count) + 1) / 2 # The +1, /2, is to normalize, 
-                                                                    # otherwise the game is designed 
-                                                                    # such that it would return -1 to 1
-                                                                    # 1 - at the start to choose the worst
-                                                                    # next move because it is the opponent
-        return q_value + self.args['C'] * (math.sqrt(self.visit_count) / (child.visit_count + 1)) * child.prior
+    def get_ucb(self, vc, vsum, prior):
+
+        # q_value = 1 - (vsum/vc + 1) / 2
+        q_value = -vsum/(vc+1e-7)
+        # if child.visit_count == 0:
+        #     q_value = 0
+        # else:
+        #     q_value = 1 - ((child.value_sum / (child.visit_count)) + 1) / 2 # The +1, /2, is to normalize, 
+        #                                                             # otherwise the game is designed 
+        #                                                             # such that it would return -1 to 1
+        #                                                             # 1 - at the start to choose the worst
+        #                                                             # next move because it is the opponent
+
+        return q_value + self.args['C'] * (math.sqrt(self.visit_count) / (vc + 1)) * prior
     
     def expand(self, policy):
 
@@ -68,7 +87,13 @@ class Node:
                 # child_state = self.game.get_next_state(child_state, action, 1)
                 # child_state = self.game.change_perspective(child_state, player=-1)
 
-                child = Node(self.game, self.args, None, self, action, prob, color=not self.color)
+                child = Node(game=self.game,
+                             args=self.args,
+                             state=None,
+                             parent=self,
+                             action_taken=action,
+                             prior=prob.item(),
+                             color=not self.color)
                 self.children.append(child)
 
             self.explored.append(np.random.randint(len(self.children)))
