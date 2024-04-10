@@ -47,48 +47,53 @@ class chessDataset(Dataset):
             'rewards': rewards
         }
 
-def train(model=None, dataloader=None, optimiser=None) -> None:
+def train(model=None, dataloader=None, optimiser=None, total_steps=0) -> None:
     # shuffle(training_data)
     # loss = torch.zeros(1).to("cuda").requires_grad_(True)
-    for idx, batch in enumerate(dataloader):
-        # game_history = training_data[index]
 
-        # for move in zip(game_history["states"], game_history["actions"], game_history["rewards"]):
-        # print(move)
-        # policy_mask = validActionsToTensor(move[1]).unsqueeze(0)
-
-        # print(batch["states"])
-
-        p, v = model(batch["states"].to(device))
-        v = v.squeeze(-1)
-        p_target = batch["actions"].to(device)
-        v_target = batch["rewards"].to(device)
-        # print(v.shape, v_target.shape)
-        # p_target = torch.reshape(p_target, (p_target.size()[0], 1))
-
-        # v_target = torch.tensor(v_target, dtype=torch.float32, device="cuda", requires_grad=True)
-        # v = torch.tensor(v, dtype=torch.float32, device="cuda", requires_grad=True)
-
-        # print(p, v)
-        # print(p_target, v_target)
-        # print(p.size(), p_target.size())
-        # print(torch.log(p.to("cuda")).size())
-        # print(torch.pow(torch.sub(v_target, v), 2).shape, torch.sum(torch.log(p)*p_target,dim=1).shape)
-        loss = torch.sum(torch.sub(
-                torch.pow(torch.sub(v_target, v), 2), 
-                torch.sum(torch.log(p)*p_target,dim=1)
-        ))
-
-        print(f"iteration{idx}/{len(dataloader)} loss {loss}")
-
+    for steps in range(total_steps):
         
-        # print(move_loss.size())
-        # if torch.any(move_loss.isnan()):
-        #     loss = torch.add(loss, move_loss)
+        print(f"Step {steps}/{total_steps}")
 
-        optimiser.zero_grad()
-        loss.backward()
-        optimiser.step()
+        for idx, batch in enumerate(dataloader):
+            # game_history = training_data[index]
+
+            # for move in zip(game_history["states"], game_history["actions"], game_history["rewards"]):
+            # print(move)
+            # policy_mask = validActionsToTensor(move[1]).unsqueeze(0)
+
+            # print(batch["states"])
+
+            p, v = model(batch["states"].to(device))
+            v = v.squeeze(-1)
+            p_target = batch["actions"].to(device)
+            v_target = batch["rewards"].to(device)
+            # print(v.shape, v_target.shape)
+            # p_target = torch.reshape(p_target, (p_target.size()[0], 1))
+
+            # v_target = torch.tensor(v_target, dtype=torch.float32, device="cuda", requires_grad=True)
+            # v = torch.tensor(v, dtype=torch.float32, device="cuda", requires_grad=True)
+
+            # print(p, v)
+            # print(p_target, v_target)
+            # print(p.size(), p_target.size())
+            # print(torch.log(p.to("cuda")).size())
+            # print(torch.pow(torch.sub(v_target, v), 2).shape, torch.sum(torch.log(p)*p_target,dim=1).shape)
+            loss = torch.sum(torch.sub(
+                    torch.pow(torch.sub(v_target, v), 2), 
+                    torch.sum(torch.log(p)*p_target,dim=1)
+            ))
+
+            print(f"iteration{idx}/{len(dataloader)} loss {loss}")
+
+            
+            # print(move_loss.size())
+            # if torch.any(move_loss.isnan()):
+            #     loss = torch.add(loss, move_loss)
+
+            optimiser.zero_grad()
+            loss.backward()
+            optimiser.step()
 
 
     # for game_history in training_data:
@@ -113,21 +118,25 @@ def hw():
 
 def main():
     model = policyNN(config=dict())
-    # pretrained_weights = torch.load("test3.pt")
-    # model.load_state_dict(pretrained_weights)
     
     generate_step = 10000
     num_steps = 200000
-    num_games = 210
+    num_games = 140
     num_process = 7
+
     args = {
         'C': 2,
         'num_searches': 50,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
-        'batch_size': 64
+        'batch_size': 64,
+        "start_epoch": 1
     }
+
+    num_searches = args["num_searches"]
+    batch_size = args["batch_size"]
+    start_epoch = args["start_epoch"]
     
     # for batch in training_dataloader:
     #     print(batch)
@@ -136,9 +145,21 @@ def main():
 
     optimiser = SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)
 
+    if start_epoch>0:
+        try:
+            pretrained_weights = torch.load(f"saves/train_{num_searches}_{batch_size}_{start_epoch-1}.pt")
+            optimiser_weights = torch.load(f"saves/opt_{num_searches}_{batch_size}_{start_epoch-1}.pt", map_location=device)
+            model.load_state_dict(pretrained_weights)
+            optimiser.load_state_dict(optimiser_weights)
+        except:
+            print(f"No saved weights from epoch {start_epoch-1} found!")
+            start_epoch = 0
+    
     # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimiser, num_steps//generate_step*5)
+    
+    manager = mp.Manager()
 
-    for epoch in range(num_steps//generate_step):
+    for epoch in range(start_epoch, num_steps//generate_step):
 
         print("Epoch", epoch)
 
@@ -148,7 +169,6 @@ def main():
 
         model.eval()
 
-        manager = mp.Manager()
         return_dict = manager.dict()
             
         processes = []
@@ -166,7 +186,7 @@ def main():
         for p in processes:
             p.join()
 
-        
+        del processes
 
         training_data = {
             'states': [],
@@ -195,16 +215,11 @@ def main():
         model.train()
         model = model.to(device)
 
-        for steps in range(generate_step//len(training_dataloader)):
+        total_steps = generate_step//len(training_dataloader)
 
-            # print(model.conv1.weight)
-
-            train(model=model, dataloader=training_dataloader, optimiser=optimiser)
+        train(model=model, dataloader=training_dataloader, optimiser=optimiser, total_steps=total_steps)
 
             # print(f"Epoch {epoch} training complete")
-
-        num_searches = args["num_searches"]
-        batch_size = args["batch_size"]
 
         torch.save(model.state_dict(), f"./saves/train_{num_searches}_{batch_size}_{epoch}.pt")
         torch.save(optimiser.state_dict(), f"./saves/opt_{num_searches}_{batch_size}_{epoch}.pt")
