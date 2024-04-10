@@ -1,5 +1,6 @@
 from chess_tensor import ChessTensor
 import chess
+import torch
 
 class PlayTensor():
     def __init__(self, chess960=False):
@@ -8,6 +9,10 @@ class PlayTensor():
     def start_new_game(self, chess960=False):
         """ Restart a game from the start """
         self.game = ChessTensor(chess960)
+
+    def get_board(self) -> chess.Board:
+        """ Get the current board """
+        return self.game.board
 
     def get_move(self) -> list[chess.Move]:
         """ Generates all possible moves """
@@ -23,8 +28,8 @@ class PlayTensor():
     def __generate_move(self):
         """ Let the model play moves """
         # Have the model play a move here
-        tensor = self.game.get_representation()
-        move = self.model(tensor) # How do we run inference here? 
+        board = self.get_board()
+        move = self.model.get_best_move(board) # How do we run inference here? 
         self.game.move_piece(move)
     
     def check_if_end(self) -> bool:
