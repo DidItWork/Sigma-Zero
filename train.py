@@ -16,17 +16,20 @@ class chessDataset(Dataset):
         self.states = training_data["states"]
         self.actions = training_data["actions"]
         self.rewards = training_data["rewards"]
+        self.colours = training_data["colours"]
 
     def __len__(self):
         return len(self.states)
     
     def __getitem__(self, index):
 
-        # actionTensor = actionsToTensor(self.actions[index], color=self.colours[index])[0]
+        action_tensor = actionsToTensor(self.actions[index], color=self.colours[index])[0]
+
+        action_tensor.requires_grad = False
 
         reward = torch.tensor(self.rewards[index], requires_grad = False)
 
-        return self.states[index], self.actions[index], reward
+        return self.states[index], action_tensor, reward
     
     @staticmethod
     def collatefn(batch):
@@ -47,13 +50,17 @@ class chessDataset(Dataset):
             'rewards': rewards
         }
 
-def train(model=None, dataloader=None, optimiser=None, total_steps=0) -> None:
+def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_scheduler=None) -> None:
     # shuffle(training_data)
     # loss = torch.zeros(1).to("cuda").requires_grad_(True)
 
     for steps in range(total_steps):
         
         print(f"Step {steps}/{total_steps}")
+
+        for pg in optimiser.param_groups:
+            print("Learning Rate", pg["lr"])
+            break
 
         for idx, batch in enumerate(dataloader):
             # game_history = training_data[index]
@@ -95,6 +102,9 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0) -> None:
             loss.backward()
             optimiser.step()
 
+            if lr_scheduler is not None:
+                lr_scheduler.step()
+
 
     # for game_history in training_data:
     #     # loss = torch.tensor()
@@ -117,21 +127,21 @@ def hw():
     print("Hello World!")
 
 def main():
-    model = policyNN(config=dict())
+    model = policyNN(config=dict()).to(device)
     
     generate_step = 10000
     num_steps = 200000
-    num_games = 140
+    num_games = 140 #210 games before epoch 6
     num_process = 7
 
     args = {
         'C': 2,
-        'num_searches': 50,
+        'num_searches': 800,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
         'batch_size': 64,
-        "start_epoch": 1
+        "start_epoch": 6
     }
 
     num_searches = args["num_searches"]
@@ -143,7 +153,7 @@ def main():
 
     mp.set_start_method('spawn', force=True)
 
-    optimiser = SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)
+    optimiser = SGD(model.parameters(), lr=0.0003, momentum=0.9, weight_decay=1e-4)
 
     if start_epoch>0:
         try:
@@ -155,7 +165,7 @@ def main():
             print(f"No saved weights from epoch {start_epoch-1} found!")
             start_epoch = 0
     
-    # lr_scheduler = torch.optim.lr_scheduler.StepLR(optimiser, num_steps//generate_step*5)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimiser, step_size=int(0.9*generate_step), gamma=0.7)
     
     manager = mp.Manager()
 
@@ -186,12 +196,11 @@ def main():
         for p in processes:
             p.join()
 
-        del processes
-
         training_data = {
             'states': [],
             'actions': [],
-            'rewards': []
+            'rewards': [],
+            'colours': [],
         }
 
         # print(return_dict)
@@ -201,6 +210,9 @@ def main():
             for key in training_data:
                 training_data[key] += game_dict[key]
         
+        del return_dict
+        del processes
+        
         # print(training_data)
 
         training_dataset = chessDataset(training_data=training_data)
@@ -208,7 +220,7 @@ def main():
         training_dataloader = DataLoader(dataset=training_dataset,
                                         batch_size=args['batch_size'],
                                         shuffle=True,
-                                        num_workers=4,
+                                        num_workers=1,
                                         collate_fn=training_dataset.collatefn,
                                         drop_last=True)
 
@@ -217,7 +229,9 @@ def main():
 
         total_steps = generate_step//len(training_dataloader)
 
-        train(model=model, dataloader=training_dataloader, optimiser=optimiser, total_steps=total_steps)
+        
+
+        train(model=model, dataloader=training_dataloader, optimiser=optimiser, total_steps=total_steps, lr_scheduler=lr_scheduler)
 
             # print(f"Epoch {epoch} training complete")
 
@@ -227,6 +241,11 @@ def main():
         t2 = time.perf_counter()
 
         print(f"Time taken: {t2-t1:0.4f} seconds")
+
+        #clear memory
+        del training_data
+        del training_dataloader
+        del training_dataset
 
     print("Training complete")
     

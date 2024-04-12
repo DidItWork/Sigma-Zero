@@ -39,7 +39,8 @@ def play_game(model, args):
     game_history = {
         'states': [],
         'actions': [],
-        'rewards': [] # Rewards will be assigned later based on the game outcome
+        'rewards': [], # Rewards will be assigned later based on the game outcome
+        'colours': [],
     }
     
     while not board.is_game_over():
@@ -54,6 +55,8 @@ def play_game(model, args):
         # Convert the current board state to a tensor
         state_tensor = chess_tensor.get_representation()
 
+        state_tensor.requires_grad = False
+
         t2 = time.perf_counter()
         
         # Use MCTS to determine the best move
@@ -65,14 +68,11 @@ def play_game(model, args):
 
         best_move = max(action_probs, key=action_probs.get)
 
-        action_tensor = actionsToTensor(action_probs, color=board.turn)[0]
-
-        action_tensor.requires_grad = False
-
         # Save the state and action
         game_history['states'].append(state_tensor)
-        game_history['actions'].append(action_tensor) ### SHOULD THIS BE THE MOVE OR THE BEST_MOVE?
-        
+        game_history['actions'].append(action_probs) ### SHOULD THIS BE THE MOVE OR THE BEST_MOVE?
+        game_history["colours"].append(board.turn)
+
         # Apply the move
         board.push(best_move)
         
@@ -143,7 +143,8 @@ def generate_training_data(model, num_games=1, args=None, return_dict=None):
     games_history = {
         'states': [],
         'actions': [],
-        'rewards': [] # Rewards will be assigned later based on the game outcome
+        'rewards': [], # Rewards will be assigned later based on the game outcome
+        'colours': [],
     }
     
     # for _ in range(num_games):

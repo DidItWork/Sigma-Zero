@@ -101,13 +101,14 @@ class policyNN(nn.Module):
 
         inc = config.get("in_channels", 119)
 
-        self.conv1 = nn.Conv2d(inc, 256, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(inc, 256, kernel_size=3, padding=1, bias=False)
+        self.norm_layer = nn.BatchNorm2d(256)
 
-        self.conv_p1 = nn.Conv2d(256, 256, kernel_size=1)
+        self.conv_p1 = nn.Conv2d(256, 256, kernel_size=1, bias=False)
         self.conv_p2 = nn.Conv2d(256, 73, kernel_size=1)
         self.p_norm = nn.BatchNorm2d(73)
 
-        self.conv_v1 = nn.Conv2d(256, 1, kernel_size=1)
+        self.conv_v1 = nn.Conv2d(256, 1, kernel_size=1, bias=False)
         self.v_norm = nn.BatchNorm2d(1)
         self.fc_v1 = nn.Linear(64, 256)
         self.fc_v2 = nn.Linear(256, 1)
@@ -123,6 +124,7 @@ class policyNN(nn.Module):
     def policy_head(self, x: tensor) -> tensor:
 
         x = self.conv_p1(x)
+        x = nn.ReLU(x)
         x = self.conv_p2(x)
         x = self.p_norm(x)
         x = nn.ReLU()(x)
@@ -134,10 +136,12 @@ class policyNN(nn.Module):
 
         x = self.conv_v1(x)
         x = self.v_norm(x)
-
         x = nn.ReLU()(x)
+
         x = torch.flatten(x, start_dim=1)
+
         x = self.fc_v1(x)
+        x = nn.ReLU()(x)
         x = self.fc_v2(x)
         x = torch.tanh(x)
 
@@ -146,7 +150,7 @@ class policyNN(nn.Module):
     def forward(self, x: tensor) -> tuple:
 
         x = self.conv1(x)
-
+        x = self.norm_layer(x)
         x = nn.ReLU()(x)
 
         x = self.resnet_blocks(x)
