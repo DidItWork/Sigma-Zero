@@ -17,18 +17,18 @@ left_column, center_column, right_column = st.columns([0.2,0.6,0.2], gap='large'
 # Left column
 with left_column:
     st.subheader("White")
-    st.caption("<player type>")
+    st.caption(st.session_state['white_player'])
     st.caption("Wins: 0")
-    st.divider()
+    st.markdown('---')
     st.write("Valid moves")
     st.caption("E2E3 \n A2A4 \n D2D3")
-    st.divider()
+    st.markdown('---')
     st.text_input("Enter your move", key="white_move")
 
 # Center column
 with center_column:
-    st.title("<game mode>")
-    st.image('/Users/abramtan/Developer/Sigma-Zero/temp.svg', use_column_width='always')
+    st.title(st.session_state['game_mode'])
+    st.image('./temp.webp', use_column_width='always')
     c0, c1, c2, c3, c4 = st.columns([0.17,0.1,0.46,0.1,0.17], gap='small')
     c0.button('<<', key='c0_button')
     c1.button('<', key='c1_button')
@@ -39,12 +39,12 @@ with center_column:
 # Right column
 with right_column:
     st.subheader("Black")
-    st.caption("<player type>")
+    st.caption(st.session_state['black_player'])
     st.caption("Wins: 0")
-    st.divider()
+    st.markdown('---')
     st.write("Valid moves")
     st.caption("E2E3 \n A2A4 \n D2D3")
-    st.divider()
+    st.markdown('---')
     st.text_input("Enter your move", key="black_move")
 
 # Sidebar
