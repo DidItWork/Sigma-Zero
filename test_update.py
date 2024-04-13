@@ -1,10 +1,10 @@
 import chess
 import torch
+import math
 
 from mcts import MCTS0
 from network import policyNN
 from play import PlayTensor
-from chess_tensor import ChessTensor, tensorToAction
 
 
 class Agent:
@@ -28,13 +28,13 @@ def update_model(current_model=None, new_model=None, matches=1) -> bool:
 
     # Load current model
     if current_model:
-        network.load_state_dict(torch.load(current_model))
+        network.load_state_dict(torch.load(current_model), strict=False)
     network.eval()
 
     # Load new_model
     new_network = policyNN(config=dict()).to(device)
     if new_model:
-        new_network.load_state_dict(torch.load(new_model))
+        new_network.load_state_dict(torch.load(new_model), strict=False)
     else:
         return False
     new_network.eval()
@@ -42,10 +42,10 @@ def update_model(current_model=None, new_model=None, matches=1) -> bool:
     new_model_wins = 0
     args = {
         'C': 2,
-        'num_searches': 100,
+        'num_searches': 800,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
-        'num_epochs': 4,
+        'num_epochs': 4, 
         'batch_size': 64
     }
 
@@ -59,6 +59,7 @@ def update_model(current_model=None, new_model=None, matches=1) -> bool:
             else:
                 play.model = Agent(new_network, play.game, args)
                 agent = Agent(network, play.game, args)
+
             while play.check_if_end() is False:
                 board = play.get_board()
                 print("---------------")
@@ -66,48 +67,28 @@ def update_model(current_model=None, new_model=None, matches=1) -> bool:
                 best_move = agent.get_best_move(board)
                 play.play_move(best_move)
             
-            if play.check_if_end == chess.White and colour == 1:
+            if play.check_if_end == chess.WHITE and colour == 1:
                 new_model_wins += 1
-            elif play.check_if_end == chess.Black and colour == 0:
+            elif play.check_if_end == chess.BLACK and colour == 0:
                 new_model_wins += 1
             else:  # draw
                 new_model_wins += 0.5
 
-            if new_model_wins >= 5:  # update model if performance is better
+            print("new model wins", new_model_wins)
+            if new_model_wins >=  math.ceil(matches / 2):  # update model if performance is better
                 torch.save(new_network.state_dict(), current_model)
                 return True
     return False
 
 
 def main():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    network = policyNN(config=dict()).to(device)
-    torch.save(network.state_dict(), "./base.pt")
+    base = "./test3.pt"  # old trained weights
+    new = "./supervised_model.pt"  # new trained weights, to be checked
 
-    print(update_model(current_model="./base.pt", new_model="./test3.pt", matches=10))
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
-    # network = policyNN(config=dict()).to(device)
-    # network.eval()
-    # game = ChessTensor()
-
-    # board = game.get_representation().unsqueeze(0).cuda()
-
-    # policy, value = network(board)
-
-    # print(policy)
-    # print(value)
-
-    # network.load_state_dict(torch.load("./test3.pt"))
-    # # network.optimiser.load_state_dict(torch.load("./opt3.pt"))
-    # network.eval()
-    # policy, value = network(board)
-
-    # actions = tensorToAction(policy.squeeze(0))
-
-    # print(policy)
-    # print(actions)
-    # print(value)
-    # print("Test complete")
+    if update_model(current_model=base, new_model=new, matches=3):
+        print(f"Model {base} updated")
+    else:
+        print("Model not updated")
 
 
 if __name__ == "__main__":
