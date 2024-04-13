@@ -35,6 +35,8 @@ if st.button('Start'):
     st.session_state['color'] = color
     st.session_state['no_of_moves'] = 0
     st.session_state['opponent_move'] = 'None'
+    st.session_state['prev_board_counter'] = 0
+    st.session_state['current_move'] = ""
 
     # display a success message
     st.success(f"Game is starting with {white_player} (White) vs {black_player} (Black) in {mode} mode!")
