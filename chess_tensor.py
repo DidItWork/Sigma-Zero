@@ -36,6 +36,7 @@ class ChessTensor():
 
     # This is to get a single tensor representation of the board
     def __board_to_tensor(self, board) -> torch.Tensor:
+        """ Convert the chess library board to a tensor representation"""
         order = {
             chess.PAWN: 0,
             chess.KNIGHT: 1,
@@ -62,6 +63,7 @@ class ChessTensor():
         return representation
 
     def __start_board(self, chess960=False):
+        """ Initialize the board as a tensor """
         self.board = chess.Board(chess960=chess960)
 
         # Get board current state
@@ -82,6 +84,7 @@ class ChessTensor():
         self.representation = torch.cat([current_representation, torch.zeros(self.M * (self.T - 1), 8, 8), L_tensor], 0)
     
     def move_piece(self, move: chess.Move) -> torch.Tensor:
+        """ Move a piece on the board """
         # Moving the board forward
         self.board.push(move)
 
@@ -119,6 +122,7 @@ class ChessTensor():
         self.representation = torch.cat([current_tensor, self.representation, L_tensor], 0)
 
     def undo_move(self) -> torch.Tensor:
+        """" Undo the last half-move """
         self.board.pop()
 
         # Remove first M channels
@@ -145,7 +149,8 @@ class ChessTensor():
         self.representation = torch.cat([self.representation, old_tensor, L_tensor], 0)
         
     # Function to temporarily get the board state N moves ago, then restore the current state
-    def __get_past_board_tensor(self, board) -> torch.Tensor:
+    def __get_past_board_tensor(self, board: chess.Board) -> torch.Tensor:
+        """ Get the board state N moves ago """
         # Make sure n does not exceed the current move count
         n = self.T - 1
         n = min(n, len(board.move_stack))
@@ -182,6 +187,7 @@ class ChessTensor():
 
         
     def get_representation(self) -> torch.Tensor:
+        """ Get the current board representation in the player's perspective """
         # For white representation
         if self.board.turn:
             return torch.flip(self.representation, [1])
@@ -203,6 +209,7 @@ class ChessTensor():
             return torch.flip(copy, [2])
         
     def get_moves(self) -> List[chess.Move]:
+        """ Get all possible moves for the current player """
         return list(self.board.legal_moves)
     
 
