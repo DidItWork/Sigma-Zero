@@ -85,6 +85,10 @@ class ChessTensor():
     
     def move_piece(self, move: chess.Move) -> torch.Tensor:
         """ Move a piece on the board """
+        # Validating correct move
+        if move not in self.board.legal_moves:
+            raise ValueError("Invalid move")
+
         # Moving the board forward
         self.board.push(move)
 
