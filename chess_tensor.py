@@ -65,7 +65,10 @@ class ChessTensor():
 
     def __start_board(self, chess960=False):
         """ Initialize the board as a tensor """
-        self.board = chess.Board.from_chess960_pos(random.randint(0, 959))
+        if chess960:
+            self.board = chess.Board.from_chess960_pos(random.randint(0, 959))
+        else:
+            self.board = chess.Board()
 
         # Get board current state
         board_tensor = self.__board_to_tensor(self.board)
