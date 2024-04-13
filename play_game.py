@@ -39,19 +39,19 @@ def play_game(model, args):
 
         if board.turn:
 
-            # move = input("Please enter move: ")
+            move = input("Please enter move: ")
 
-            # best_move = chess.Move.from_uci(move.strip())
+            best_move = chess.Move.from_uci(move.strip())
 
-            engine = chess.engine.SimpleEngine.popen_uci("/home/benluo/school/Sigma-Zero/stockfish/stockfish-ubuntu-x86-64-avx2")
+            # engine = chess.engine.SimpleEngine.popen_uci("/home/benluo/school/Sigma-Zero/stockfish/stockfish-ubuntu-x86-64-avx2")
 
-            limit = chess.engine.Limit(time=2.0)
+            # limit = chess.engine.Limit(time=2.0)
 
-            result = engine.play(board, limit)
+            # result = engine.play(board, limit)
 
-            best_move = result.move
+            # best_move = result.move
 
-            time.sleep(1)
+            # time.sleep(1)
         
         else:
 
@@ -92,11 +92,11 @@ if __name__ == "__main__":
 
     config = dict()
     args = {
-        'C': 4,
+        'C': 2,
         'num_searches': 800,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
-        'num_epochs': 4,
+        'num_epochs': 4, 
         'batch_size': 64
     }
 

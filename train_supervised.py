@@ -10,6 +10,22 @@ device = "cuda" if torch.cuda.is_available else "cpu"
 
 def main(train_config=None, optimiser=None, lr_scheduler=None):
 
+    start_epoch = train_config.get("start_epoch", 0)
+
+    if start_epoch>0:
+
+        try:
+
+            optimiser_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_opt.pt")
+            model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model.pt")
+
+            optimiser.load_state_dict(optimiser_weights)
+            model.load_state_dict(model_weights)
+        
+        except:
+
+            start_epoch = 0
+
     batch_size = train_config.get("batch_size", 128)
     num_epoch = train_config.get("epoch", 100)
 
@@ -27,13 +43,15 @@ def main(train_config=None, optimiser=None, lr_scheduler=None):
           dataloader=train_dataloader,
           optimiser=optimiser,
           total_steps=num_epoch,
-          lr_scheduler=lr_scheduler)
+          lr_scheduler=lr_scheduler,
+          start_epoch=start_epoch)
 
 if __name__ == "__main__":
 
     train_config = {
         "batch_size": 2048,
-        "epoch": 5
+        "epoch": 10,
+        "start_epoch": 5,
     }
     model_config = {
         "dropout": 0.0,
@@ -44,6 +62,7 @@ if __name__ == "__main__":
     lr = 0.02
     lr_step_size = 200
     weight_decay = 1e-4
+    
 
     model = policyNN(model_config).to(device)
 

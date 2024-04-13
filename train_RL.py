@@ -50,11 +50,11 @@ class chessDataset(Dataset):
             'rewards': rewards
         }
 
-def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_scheduler=None) -> None:
+def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_scheduler=None, start_epoch=0) -> None:
     # shuffle(training_data)
     # loss = torch.zeros(1).to("cuda").requires_grad_(True)
 
-    for steps in range(total_steps):
+    for steps in range(start_epoch, total_steps):
         
         print(f"Step {steps}/{total_steps}")
 
