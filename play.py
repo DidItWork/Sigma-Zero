@@ -29,6 +29,8 @@ class PlayTensor():
         """ Let the model play moves """
         # Have the model play a move here
         board = self.get_board()
+        if self.check_if_end():
+            return
         move = self.model.get_best_move(board) # How do we run inference here? 
         self.game.move_piece(move)
     
