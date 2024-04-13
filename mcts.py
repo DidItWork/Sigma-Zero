@@ -39,6 +39,9 @@ class MCTS0:
     @torch.no_grad()
     def search(self, state, verbose=True, learning=True):
 
+        #Set model to evaluation mode
+        self.model.eval()
+
         # Define root node
         root = Node(self.game, self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
         

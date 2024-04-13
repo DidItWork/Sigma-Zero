@@ -84,7 +84,7 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
 
             # print(p, v)
             # print(p_target, v_target)
-            # print(p.size(), p_target.size())
+            # print(p.shape, p_target.shape)
             # print(torch.log(p.to("cuda")).size())
             # print(torch.pow(torch.sub(v_target, v), 2).shape, torch.sum(torch.log(p)*p_target,dim=1).shape)
             # loss = torch.sum(torch.sub(
@@ -108,6 +108,10 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
 
             if lr_scheduler is not None:
                 lr_scheduler.step()
+        
+        #Save at the end of epoch
+        torch.save(model.state_dict(), "saves/supervised_model.pt")
+        torch.save(optimiser.state_dict(), "saves/supervised_opt.pt")
 
 
     # for game_history in training_data:
@@ -157,7 +161,7 @@ def main():
 
     mp.set_start_method('spawn', force=True)
 
-    optimiser = Adam(model.parameters(), lr=0.001)
+    optimiser = Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
 
     if start_epoch>0:
         try:

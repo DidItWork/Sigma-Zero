@@ -4,7 +4,7 @@ import chess.pgn
 import bz2
 import io
 from tqdm import tqdm
-from chess_tensor import ChessTensor, actionToTensor
+from chess_tensor import ChessTensor, actionsToTensor, tensorToAction
 
 @torch.no_grad()
 def get_games(file_path:str):
@@ -44,6 +44,13 @@ def get_games(file_path:str):
             winner = None
 
         for move in chess_game.mainline_moves():
+
+            #Check move tensor
+            # mt, queen_promotion = actionsToTensor([move], ct.board.turn)
+
+            # move2 = tensorToAction(mt,ct.board.turn,queen_promotion=queen_promotion)
+
+            # assert move==move2[0]
 
             game_history["states"].append(ct.get_representation())
             game_history["actions"].append({move:1.0})

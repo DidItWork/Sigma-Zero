@@ -54,6 +54,9 @@ class Node:
 
         ucb = self.get_ucb(vc, vsum, prior)
 
+        # print(prior)
+        # print(ucb)
+
         return self.children[torch.argmax(ucb).item()]
     
     def get_ucb(self, vc, vsum, prior):

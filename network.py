@@ -115,9 +115,18 @@ class policyNN(nn.Module):
 
         self.resnet_blocks = []
 
+        dp = config.get("dropout", 0.)
+
+        v_dp = config.get("value dropout", 0.)
+        p_dp = config.get("policy dropout", 0.)
+
+        self.v_do = nn.Dropout(p=v_dp)
+        self.p_do = nn.Dropout(p=p_dp)
+
         for _ in range(19):
 
             self.resnet_blocks.append(BasicBlock(256, 256, 1))
+            self.resnet_blocks.append(nn.Dropout(p=dp))
 
         self.resnet_blocks = nn.Sequential(*self.resnet_blocks)
 
@@ -127,6 +136,9 @@ class policyNN(nn.Module):
 
         x = self.conv_p1(x)
         x = nn.ReLU()(x)
+
+        x = self.p_do(x)
+
         x = self.conv_p2(x)
         x = self.p_norm(x)
         x = nn.ReLU()(x)
@@ -144,6 +156,9 @@ class policyNN(nn.Module):
 
         x = self.fc_v1(x)
         x = nn.ReLU()(x)
+
+        x = self.v_do(x)
+
         x = self.fc_v2(x)
         x = torch.tanh(x)
 

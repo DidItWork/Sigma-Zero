@@ -81,7 +81,7 @@ class ChessTensor():
         no_progress = torch.zeros(1, 8, 8, dtype=torch.int16)
 
         self.representation = torch.cat([current_representation, torch.zeros(self.M * (self.T - 1), 8, 8, dtype=torch.int16), white, total_moves, castling, no_progress], 0)
-        self.black_representation = torch.cat([torch.zeros(self.M * (self.T), 8, 8, dtype=torch.int16), black, total_moves, castling, no_progress], 0)
+        self.black_representation = torch.cat([current_representation[6:12], current_representation[:6], repetition_tensor, torch.zeros(self.M * (self.T - 1), 8, 8, dtype=torch.int16), black, total_moves, castling, no_progress], 0)
     
     def move_piece(self, move: chess.Move) -> torch.Tensor:
         """ Move a piece on the board """
@@ -92,9 +92,6 @@ class ChessTensor():
         board_tensor = self.__board_to_tensor(self.board)
 
         # Add repetition tensor
-        repetition_1 = False
-        repetition_2 = False
-
         repetition_1 = self.board.is_repetition(1)
         repetition_2 = self.board.is_repetition(2)
 
@@ -125,7 +122,7 @@ class ChessTensor():
 
         # Combining all tensors
         self.representation = torch.cat([current_tensor, self.representation, L_tensor], 0)
-        self.black_representation = torch.cat([current_tensor[6:], current_tensor[:6], self.black_representation, L_tensor_black], 0)
+        self.black_representation = torch.cat([current_tensor[6:12], current_tensor[:6], current_tensor[12:], self.black_representation, L_tensor_black], 0)
 
     # def undo_move(self) -> torch.Tensor:
     #     """" Undo the last half-move """
@@ -247,8 +244,8 @@ class ChessTensor():
     def get_value_and_terminated(self):
         if self.board.is_game_over():
             winner = self.board.outcome().winner
-            # print(winner, self.board.turn)
-            # print(self.board)
+            print(winner, self.board.turn)
+            print(self.board)
             if winner == None:
                 #Draw
                 return 0, True

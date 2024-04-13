@@ -6,7 +6,7 @@ import chess.engine
 import numpy as np
 from mcts import MCTS0
 from network import policyNN
-from chess_tensor import ChessTensor, actionsToTensor
+from chess_tensor import ChessTensor, actionsToTensor, tensorToAction
 import torch
 import time
 import os
@@ -57,7 +57,6 @@ def play_game(model, args):
 
             t1 = time.perf_counter()
 
-
             mcts = MCTS0(game=chess_tensor, model=model, args=args)  # Create a new MCTS object for every turn
         
             action_probs = mcts.search(board, verbose=False, learning=False)
@@ -70,7 +69,7 @@ def play_game(model, args):
 
             print("Search Time", t2-t1)
 
-
+        print("Board", chess_tensor.board.turn)
 
         board.push(best_move)
         
@@ -78,7 +77,6 @@ def play_game(model, args):
         chess_tensor.move_piece(best_move)
 
         
-
         #debug code
         # print(f"Init time: {t2-t1}\nSearch time: {t3-t2}\nMove time: {t4-t3}\nLoop time: {t4-t1}")
         
@@ -94,7 +92,7 @@ if __name__ == "__main__":
 
     config = dict()
     args = {
-        'C': 2,
+        'C': 4,
         'num_searches': 800,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
@@ -112,12 +110,22 @@ if __name__ == "__main__":
     
     play_game(model=model, args=args)
 
-    # move = chess.Move.from_uci("e2e4")
+    # move = chess.Move.from_uci("e1e5")
 
     # ct.move_piece(move)
 
     # print(ct.board)
 
     # p,v = model(ct.get_representation().float().unsqueeze(0).to(device), inference=True)
+    
+    # p = p.cpu()
+
+    # valid_moves = actionsToTensor(ct.get_valid_moves(ct.board), color=chess.BLACK)[0]
+
+    # p = p*valid_moves.unsqueeze(0)
+
+    # # print(p.shape)
+
+    # print(list(zip(tensorToAction(p[0], color=chess.BLACK),p[0][p[0].nonzero()].squeeze())), v)
 
     # print(p, v)
