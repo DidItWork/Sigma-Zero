@@ -3,9 +3,6 @@ import numpy as np
 import pandas as pd
 import time
 
-# TODO Implement visualizations of various game stats based on the CSV created by the 'save game(s)' button in 'play' page
-# TODO Implement download CSV of game histories
-
 ############# DUMMY DATA#############
 # COMMENT/UNCOMMENT TO SEE THE DIFFERENCE
 # st.session_state.df = pd.DataFrame(np.random.randn(20, 2), columns=["x", "y"])
@@ -49,6 +46,7 @@ else:
     st.header("Game History")
     st.markdown('Here are the stats of the games you have played so far.')
     # Apply the categorical ordering and plot
+    df = pd.read_csv('game_stats.csv', index_col=0)
     white_data = df[['sigma_wins', 'human_wins', 'draws']].T
     white_data.index = ordered_cat
     st.bar_chart(white_data)
@@ -64,7 +62,7 @@ else:
 
     # Sidebar
     st.sidebar.button('Refresh')
-    filename = './temp.webp'
+    filename = './game_stats.csv'
     with open(filename, 'rb') as f:
         s = f.read()
-    st.sidebar.download_button(label=f'Download CSV', data=csv, file_name='game_stats.csv', mime='text/csv')
+    st.sidebar.download_button(label=f'Download CSV', data=s, file_name='game_stats.csv', mime='text/csv')
