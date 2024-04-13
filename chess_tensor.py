@@ -2,6 +2,7 @@ import chess
 import torch
 import numpy as np
 from typing import List, Union, Tuple
+import random
 
 
 """
@@ -64,7 +65,7 @@ class ChessTensor():
 
     def __start_board(self, chess960=False):
         """ Initialize the board as a tensor """
-        self.board = chess.Board(chess960=chess960)
+        self.board = chess.Board.from_chess960_pos(random.randint(0, 959))
 
         # Get board current state
         board_tensor = self.__board_to_tensor(self.board)
