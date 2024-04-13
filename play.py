@@ -5,9 +5,13 @@ class PlayTensor():
     def __init__(self, chess960=False):
         self.model = None # TODO: Load model here
 
-    def start_new_game(self, chess960=False):
+    def start_new_game(self, chess960=False, color=chess.WHITE):
         """ Restart a game from the start """
-        self.game = ChessTensor(chess960)
+        if color == chess.WHITE:
+            self.game = ChessTensor(chess960)
+        else:
+            self.game = ChessTensor(chess960)
+            self.__generate_move()
 
     def get_move(self) -> list[chess.Move]:
         """ Generates all possible moves """
