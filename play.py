@@ -1,13 +1,19 @@
 from chess_tensor import ChessTensor
 import chess
+import copy
+import chess.svg
 
 class PlayTensor():
     def __init__(self, chess960=False):
         self.model = None # TODO: Load model here
 
-    def start_new_game(self, chess960=False):
+    def start_new_game(self, chess960=False, color=chess.WHITE):
         """ Restart a game from the start """
-        self.game = ChessTensor(chess960)
+        if color == chess.WHITE:
+            self.game = ChessTensor(chess960)
+        else:
+            self.game = ChessTensor(chess960)
+            self.__generate_move()
 
     def get_move(self) -> list[chess.Move]:
         """ Generates all possible moves """
@@ -20,7 +26,7 @@ class PlayTensor():
         self.__generate_move()
         # NOTE: Depends how smooth you want the GUI gameplay to be
         
-    def __generate_move(self):
+    def __generate_move(self) -> None:
         """ Let the model play moves """
         # Have the model play a move here
         tensor = self.game.get_representation()
@@ -33,13 +39,34 @@ class PlayTensor():
             return self.game.board.outcome().winner # NOTE: None (Draw), chess.White, chess.Black
         else:
             return False
+        
+    def get_current_board_svg(self) -> bool:
+        """ Get the current board image"""
+        svg = chess.svg.board(self.game.board)
+        with open("board.svg", "w") as f:
+            f.write(svg)
+
+        return True
     
-    def undo_move(self):
-        """ Undo a move """
-        # NOTE: We undo the move twice because the AI also played a move
-        self.game.undo_move()
-        self.game.undo_move()
+    def get_previous_board_Svg(self, moves: int) -> bool:
+        """ Get the old board image """
+        # Make deep copy of the chess tensor
+        old_board = copy.deepcopy(self.game)
+        for _ in range(moves):
+            old_board.undo_move()
+
+        svg = chess.svg.board(old_board.board)
+        with open("board.svg", "w") as f:
+            f.write(svg)
+
+        return True
         
 
+
+    # def undo_move(self):
+    #     """ Undo a move """
+    #     # NOTE: We undo the move twice because the AI also played a move
+    #     self.game.undo_move()
+    #     self.game.undo_move()
         
         
