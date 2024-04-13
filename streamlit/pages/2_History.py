@@ -10,12 +10,9 @@ import time
 # COMMENT/UNCOMMENT TO SEE THE DIFFERENCE
 # st.session_state.df = pd.DataFrame(np.random.randn(20, 2), columns=["x", "y"])
 data = {
-    'white_win': [17],
-    'white_lose': [3],
-    'white_draw': [10],
-    'black_win': [3],
-    'black_lose': [17],
-    'black_draw': [10]
+    'sigma_wins': [17],
+    'human_wins': [3],
+    'draws': [5]
 }
 
 df = pd.DataFrame(data)
@@ -31,36 +28,37 @@ if "df" not in st.session_state:
 else:
     csv = st.session_state.df.to_csv(index=False).encode('utf-8')
 
-    st.header(st.session_state['black_player'] + " vs " + st.session_state['white_player'])
+    st.subheader("See how you perfrom against SigmaZero")
     st.markdown('---')
     # st.scatter_chart(st.session_state.df, x="x", y="y")
     
     # Create bar graphs for White and Black
-    categories_order = ['Win', 'Lose', 'Draw']
+    categories_order = ['SigmaZero Wins', 'Human Wins', 'Draws']
 
-    # Create bar graphs for White and Black
-    c0, c1 = st.columns([0.5, 0.5])
+    # # Create bar graphs for White and Black
+    # c0, c1 = st.columns([0.5, 0.5])
 
     # Create a categorical type with the desired order
     ordered_cat = pd.Categorical(
-        ['Win', 'Lose', 'Draw'],
+        ['SigmaZero Wins', 'Human Wins', 'Draws'],
         categories=categories_order,
         ordered=True
     )
 
-    with c0:
-        st.subheader("White (Human)")
-        # Apply the categorical ordering and plot
-        white_data = df[['white_win', 'white_lose', 'white_draw']].T
-        white_data.index = ordered_cat
-        st.bar_chart(white_data)
+    # with c0:
+    st.header("Game History")
+    st.markdown('Here are the stats of the games you have played so far.')
+    # Apply the categorical ordering and plot
+    white_data = df[['sigma_wins', 'human_wins', 'draws']].T
+    white_data.index = ordered_cat
+    st.bar_chart(white_data)
 
-    with c1:
-        st.subheader("Black (Human)")
-        # Apply the categorical ordering and plot
-        black_data = df[['black_win', 'black_lose', 'black_draw']].T
-        black_data.index = ordered_cat
-        st.bar_chart(black_data)
+    # with c1:
+    #     st.subheader("Black (Human)")
+    #     # Apply the categorical ordering and plot
+    #     black_data = df[['sigma_wins', 'human_wins', 'draws']].T
+    #     black_data.index = ordered_cat
+    #     st.bar_chart(black_data)
 
     st.write(st.session_state.df)
 
