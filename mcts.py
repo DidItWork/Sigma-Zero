@@ -37,10 +37,13 @@ class MCTS0:
         self.noise_distribution = torch.distributions.dirichlet.Dirichlet
 
     @torch.no_grad()
-    def search(self, state, verbose=True):
+    def search(self, state, verbose=True, learning=True):
 
         # Define root node
         root = Node(self.game, self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
+        
+        #Optimisation to use piror the first time we expand
+        root.visit_count = 1
 
         # Selection
         for search in range(self.args['num_searches']):
@@ -65,59 +68,63 @@ class MCTS0:
             if verbose: print(node.game.board, node.color)
             
             value, is_terminal = node.game.get_value_and_terminated()
-            # value = node.game.get_opponent_value(value)
 
             # print(f"Selection time: {t2-t1}")
 
             if not is_terminal:
 
-                if len(node.children)==0:
 
-                    # t2_1 = time.perf_counter()
+                # t2_1 = time.perf_counter()
 
-                    valid_moves = node.game.get_valid_moves(node.game.board)
+                valid_moves = node.game.get_valid_moves(node.game.board)
 
-                    # print(valid_moves)
+                # print(valid_moves)
 
-                    policy_mask, queen_promotion = actionsToTensor(valid_moves, node.color)
+                policy_mask, queen_promotion = actionsToTensor(valid_moves, node.color)
 
-                    policy_mask = policy_mask
-                    
-                    policy, value = self.model(
-                        # stateTensor.unsqueeze(0).to(device),
-                        node.game.get_representation().unsqueeze(0).to(device)
-                    )
-
-                    # print(torch.max(policy)-torch.min(policy), value)
-
-                    # print(policy.device, value.device, policy.requires_grad, value.requires_grad)
-
-                    policy = policy.squeeze(0).detach().cpu() * policy_mask
-
-                    policy /= torch.sum(policy)
-
-                    policy = policy.squeeze(0)
-
-                    node.value = value.item()
-
-                    # print(policy.shape, policy, policy.nonzero())
-                    # print(value)
-
-                    # t2_2 = time.perf_counter()
-
-                    valid_moves = tensorToAction(policy, node.color, queen_promotion=queen_promotion)
-
-                    probs = policy[policy.nonzero()]
-
-                    policy_list = list(zip(valid_moves, probs))
-
-                    # t2_3 = time.perf_counter()
-
-                    # print(f"Model time: {t2_3-t2}")
+                policy_mask = policy_mask
                 
-                else:
+                policy, value = self.model(
+                    # stateTensor.unsqueeze(0).to(device),
+                    node.game.get_representation().float().unsqueeze(0).to(device),
+                    inference=True
+                )
 
-                    policy_list = None
+                # print(torch.max(policy)-torch.min(policy), value)
+
+                # print(policy.device, value.device, policy.requires_grad, value.requires_grad)
+
+                policy = policy.squeeze(0).detach().cpu() * policy_mask
+
+                policy /= torch.sum(policy)
+
+                policy = policy.squeeze(0)
+
+                node.value = value.item()
+
+                # print(policy.shape, policy, policy.nonzero())
+                # print(value)
+
+                # t2_2 = time.perf_counter()
+
+                valid_moves = tensorToAction(policy, node.color, queen_promotion=queen_promotion)
+
+                probs = policy[policy.nonzero()]
+
+                if learning:
+                    n_moves = torch.full(probs.shape, 0.3)
+                    noise = self.noise_distribution(n_moves).sample()
+                    eps = 0.25
+
+                    probs = (1-eps)*probs + eps*noise
+                
+
+                policy_list = list(zip(valid_moves, probs))
+
+                # t2_3 = time.perf_counter()
+
+                # print(f"Model time: {t2_3-t2}")
+                
 
                 # print(policy_list)
 
@@ -145,13 +152,19 @@ class MCTS0:
         for child in root.children:
             action_probs[child.action_taken] = child.visit_count
 
-        n_moves = torch.full((len(root.children),), 0.3)
-        noise = self.noise_distribution(n_moves).sample()
-        # print(noise, torch.sum(noise))
-        
         sum_values = sum(action_probs.values())
-        action_probs = {k: (v / (sum_values +1e-7) + noise[i].item())/2 for i, (k, v) in enumerate(action_probs.items())}
-        # print(action_probs)
+
+        # if learning:
+        #     n_moves = torch.full((len(root.children),), 0.3)
+        #     noise = self.noise_distribution(n_moves).sample()
+        #     eps = 0.25
+        #     # print(noise, torch.sum(noise))
+            
+        #     action_probs = {k: (1-eps)*v/(sum_values +1e-7) + eps*noise[i].item() for i, (k, v) in enumerate(action_probs.items())}
+        
+        # else:
+
+        action_probs = {k: v / (sum_values +1e-7) for k, v in action_probs.items()}
         
         return action_probs
 

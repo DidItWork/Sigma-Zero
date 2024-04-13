@@ -121,10 +121,12 @@ class policyNN(nn.Module):
 
         self.resnet_blocks = nn.Sequential(*self.resnet_blocks)
 
+        # print(self.resnet_blocks)
+
     def policy_head(self, x: tensor) -> tensor:
 
         x = self.conv_p1(x)
-        x = nn.ReLU(x)
+        x = nn.ReLU()(x)
         x = self.conv_p2(x)
         x = self.p_norm(x)
         x = nn.ReLU()(x)
@@ -147,7 +149,7 @@ class policyNN(nn.Module):
 
         return x   
 
-    def forward(self, x: tensor) -> tuple:
+    def forward(self, x: tensor, inference=False) -> tuple:
 
         x = self.conv1(x)
         x = self.norm_layer(x)
@@ -173,7 +175,7 @@ class policyNN(nn.Module):
 
         # policy = policy_exp/policy_exp_sum
 
-        policy = nn.Softmax(dim=1)(policy)
+        if inference: policy = nn.Softmax(dim=1)(policy)
 
         return (policy, value)
 

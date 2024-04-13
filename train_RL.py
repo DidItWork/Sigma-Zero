@@ -71,11 +71,12 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
 
             # print(batch["states"])
 
-            p, v = model(batch["states"].to(device))
+            p, v = model(batch["states"].float().to(device))
             v = v.squeeze(-1)
             p_target = batch["actions"].to(device)
             v_target = batch["rewards"].to(device)
-            # print(v.shape, v_target.shape)
+            # print(v, v_target)
+            # print(p[0], p_target[0])
             # p_target = torch.reshape(p_target, (p_target.size()[0], 1))
 
             # v_target = torch.tensor(v_target, dtype=torch.float32, device="cuda", requires_grad=True)
@@ -86,10 +87,13 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
             # print(p.size(), p_target.size())
             # print(torch.log(p.to("cuda")).size())
             # print(torch.pow(torch.sub(v_target, v), 2).shape, torch.sum(torch.log(p)*p_target,dim=1).shape)
-            loss = torch.sum(torch.sub(
-                    torch.pow(torch.sub(v_target, v), 2), 
-                    torch.sum(torch.log(p)*p_target,dim=1)
-            ))
+            # loss = torch.sum(torch.sub(
+            #         torch.pow(torch.sub(v_target, v), 2), 
+            #         torch.sum(torch.log(p)*p_target,dim=1)
+            # ))
+
+            loss = torch.nn.functional.mse_loss(v, v_target)
+            loss = torch.nn.functional.cross_entropy(p, p_target)
 
             print(f"iteration{idx}/{len(dataloader)} loss {loss}")
 
@@ -131,17 +135,17 @@ def main():
     
     generate_step = 10000
     num_steps = 200000
-    num_games = 140 #210 games before epoch 6
+    num_games = 35 #210 games before epoch 6
     num_process = 7
 
     args = {
         'C': 2,
-        'num_searches': 800,
+        'num_searches': 50,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,
         'batch_size': 64,
-        "start_epoch": 6
+        "start_epoch": 0
     }
 
     num_searches = args["num_searches"]
@@ -153,7 +157,7 @@ def main():
 
     mp.set_start_method('spawn', force=True)
 
-    optimiser = SGD(model.parameters(), lr=0.0003, momentum=0.9, weight_decay=1e-4)
+    optimiser = Adam(model.parameters(), lr=0.001)
 
     if start_epoch>0:
         try:
@@ -165,9 +169,16 @@ def main():
             print(f"No saved weights from epoch {start_epoch-1} found!")
             start_epoch = 0
     
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimiser, step_size=int(0.9*generate_step), gamma=0.7)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimiser, step_size=int(0.9*generate_step), gamma=0.9)
     
     manager = mp.Manager()
+
+    training_data = {
+        'states': [],
+        'actions': [],
+        'rewards': [],
+        'colours': [],
+    }
 
     for epoch in range(start_epoch, num_steps//generate_step):
 
@@ -195,13 +206,6 @@ def main():
 
         for p in processes:
             p.join()
-
-        training_data = {
-            'states': [],
-            'actions': [],
-            'rewards': [],
-            'colours': [],
-        }
 
         # print(return_dict)
 
@@ -243,7 +247,6 @@ def main():
         print(f"Time taken: {t2-t1:0.4f} seconds")
 
         #clear memory
-        del training_data
         del training_dataloader
         del training_dataset
 

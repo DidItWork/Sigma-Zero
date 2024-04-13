@@ -2,6 +2,7 @@
 TODO: Implement self-play to generate one batch of training data
 """
 import chess
+import chess.engine
 import numpy as np
 from mcts import MCTS0
 from network import policyNN
@@ -38,30 +39,45 @@ def play_game(model, args):
 
         if board.turn:
 
-            move = input("Please enter move: ")
+            # move = input("Please enter move: ")
 
-            best_move = chess.Move.from_uci(move.strip())
+            # best_move = chess.Move.from_uci(move.strip())
+
+            engine = chess.engine.SimpleEngine.popen_uci("/home/benluo/school/Sigma-Zero/stockfish/stockfish-ubuntu-x86-64-avx2")
+
+            limit = chess.engine.Limit(time=2.0)
+
+            result = engine.play(board, limit)
+
+            best_move = result.move
+
+            time.sleep(1)
         
         else:
 
+            t1 = time.perf_counter()
+
 
             mcts = MCTS0(game=chess_tensor, model=model, args=args)  # Create a new MCTS object for every turn
-
-            print(chess_tensor.get_representation()[0])
         
-            action_probs = mcts.search(board, verbose=False)
+            action_probs = mcts.search(board, verbose=False, learning=False)
 
             print(action_probs)
 
-            t3 = time.perf_counter()
+            t2 = time.perf_counter()
 
             best_move = max(action_probs, key=action_probs.get)
 
-        
+            print("Search Time", t2-t1)
+
+
+
         board.push(best_move)
         
         # Update the chess tensor with the new move
         chess_tensor.move_piece(best_move)
+
+        
 
         #debug code
         # print(f"Init time: {t2-t1}\nSearch time: {t3-t2}\nMove time: {t4-t3}\nLoop time: {t4-t1}")
@@ -86,10 +102,22 @@ if __name__ == "__main__":
         'batch_size': 64
     }
 
-    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/train_800_64_5.pt")
+    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model.pt")
 
     model = policyNN(config).to(device)
+
+    ct = ChessTensor()
 
     model.load_state_dict(model_weights)
     
     play_game(model=model, args=args)
+
+    # move = chess.Move.from_uci("e2e4")
+
+    # ct.move_piece(move)
+
+    # print(ct.board)
+
+    # p,v = model(ct.get_representation().float().unsqueeze(0).to(device), inference=True)
+
+    # print(p, v)

@@ -66,7 +66,8 @@ def play_game(model, args):
 
         t3 = time.perf_counter()
 
-        best_move = max(action_probs, key=action_probs.get)
+        #Random Sampling proportional to probs in learning
+        best_move = np.random.choice(list(action_probs.keys()), p=list(action_probs.values()))
 
         # Save the state and action
         game_history['states'].append(state_tensor)
