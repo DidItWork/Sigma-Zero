@@ -116,10 +116,10 @@ def play_game(model, args):
             elif result == "1/2-1/2":
                 model_score += 0.5
 
-            if model_score > 5:  # model won 5 points on stockfish, proceed to next level
+            if model_score > 2.5:  # model won 2.5 points on stockfish, proceed to next level
                 break
 
-        if model_score <= 5:
+        if model_score <= 2.5:
             break
         else:
             level_reached += 1
