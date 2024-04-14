@@ -45,8 +45,9 @@ def play_game(model, args):
              8: (20, 10, 50)}
 
     level_reached = 1
-    model_score = 0
     while True:
+        # track the score for this level
+        model_score = 0
         for idx in range(5):  # 5 matches
             board = chess.Board()
             chess_tensor = ChessTensor()
@@ -131,6 +132,7 @@ def play_game(model, args):
             break
         else:
             level_reached += 1
+            print("Model at level", level_reached)
 
     engine.quit()
 
