@@ -24,7 +24,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # else:
 #     device = torch.device("mps")
 
-
+@torch.no_grad()
 def play_game(model, args):
     """
     Simulates a single game of chess, with the AI playing against itself.
@@ -39,17 +39,19 @@ def play_game(model, args):
 
         if board.turn:
 
-            move = input("Please enter move: ")
+            # move = input("Please enter move: ")
 
-            best_move = chess.Move.from_uci(move.strip())
+            # best_move = chess.Move.from_uci(move.strip())
 
-            # engine = chess.engine.SimpleEngine.popen_uci("/home/benluo/school/Sigma-Zero/stockfish/stockfish-ubuntu-x86-64-avx2")
+            engine = chess.engine.SimpleEngine.popen_uci("/home/benluo/school/Sigma-Zero/stockfish/stockfish-ubuntu-x86-64-avx2")
+            
+            engine.configure({"Skill Level": 4})
 
-            # limit = chess.engine.Limit(time=2.0)
+            limit = chess.engine.Limit(time=2)
 
-            # result = engine.play(board, limit)
+            result = engine.play(board, limit)
 
-            # best_move = result.move
+            best_move = result.move
 
             # time.sleep(1)
         
@@ -100,7 +102,7 @@ if __name__ == "__main__":
         'batch_size': 64
     }
 
-    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model.pt")
+    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_40.pt")
 
     model = policyNN(config).to(device)
 
@@ -110,22 +112,24 @@ if __name__ == "__main__":
     
     play_game(model=model, args=args)
 
-    # move = chess.Move.from_uci("e1e5")
+    #move = chess.Move.from_uci("e2e4")
 
-    # ct.move_piece(move)
+    #model.eval()
 
-    # print(ct.board)
+    #ct.move_piece(move)
 
-    # p,v = model(ct.get_representation().float().unsqueeze(0).to(device), inference=True)
+    #print(ct.board)
+
+    #p,v = model(ct.get_representation().float().unsqueeze(0).to(device), inference=True)
     
-    # p = p.cpu()
+    #p = p.cpu()
 
-    # valid_moves = actionsToTensor(ct.get_valid_moves(ct.board), color=chess.BLACK)[0]
+    #valid_moves = actionsToTensor(ct.get_valid_moves(ct.board), color=chess.BLACK)[0]
 
-    # p = p*valid_moves.unsqueeze(0)
+    #p = p*valid_moves.unsqueeze(0)
 
-    # # print(p.shape)
+    # print(p.shape)
 
-    # print(list(zip(tensorToAction(p[0], color=chess.BLACK),p[0][p[0].nonzero()].squeeze())), v)
+    #print(list(zip(tensorToAction(p[0], color=chess.BLACK),p[0][p[0].nonzero()].squeeze())), v)
 
     # print(p, v)

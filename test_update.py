@@ -6,6 +6,8 @@ from mcts import MCTS0
 from network import policyNN
 from play import PlayTensor
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 
 class Agent:
     def __init__(self, network, game, args):
@@ -22,7 +24,7 @@ class Agent:
 
 
 def update_model(current_model=None, new_model=None, matches=1) -> bool:
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+
     network = policyNN(config=dict()).to(device)
     play = PlayTensor()
 
@@ -75,7 +77,7 @@ def update_model(current_model=None, new_model=None, matches=1) -> bool:
                 new_model_wins += 0.5
 
             print("new model wins", new_model_wins)
-            if new_model_wins >=  math.ceil(matches / 2):  # update model if performance is better
+            if new_model_wins >=  math.ceil(0.55*matches):  # update model if performance is better
                 torch.save(new_network.state_dict(), current_model)
                 return True
     return False

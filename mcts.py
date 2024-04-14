@@ -44,7 +44,7 @@ class MCTS0:
 
         # Define root node
         root = Node(self.game, self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
-        
+
         #Optimisation to use piror the first time we expand
         root.visit_count = 1
 

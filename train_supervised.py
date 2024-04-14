@@ -16,8 +16,8 @@ def main(train_config=None, optimiser=None, lr_scheduler=None):
 
         try:
 
-            optimiser_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_opt.pt")
-            model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model.pt")
+            optimiser_weights = torch.load(f"/home/benluo/school/Sigma-Zero/saves/supervised_opt_15k_{start_epoch-1}.pt")
+            model_weights = torch.load(f"/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_{start_epoch-1}.pt")
 
             optimiser.load_state_dict(optimiser_weights)
             model.load_state_dict(model_weights)
@@ -29,7 +29,7 @@ def main(train_config=None, optimiser=None, lr_scheduler=None):
     batch_size = train_config.get("batch_size", 128)
     num_epoch = train_config.get("epoch", 100)
 
-    dataset = torch.load("train_set.pt")
+    dataset = torch.load("train_set_15k.pt")
 
     train_dataset = chessDataset(training_data=dataset)
 
@@ -50,17 +50,17 @@ if __name__ == "__main__":
 
     train_config = {
         "batch_size": 2048,
-        "epoch": 10,
-        "start_epoch": 5,
+        "epoch": 61,
+        "start_epoch": 56,
     }
     model_config = {
-        "dropout": 0.0,
-        "value_dropout": 0.0,
-        "policy_dropout": 0.0
+        "dropout": 0.,
+        "value_dropout": 0.,
+        "policy_dropout": 0.
     }
 
-    lr = 0.02
-    lr_step_size = 200
+    lr = 0.005
+    lr_step_size = 500
     weight_decay = 1e-4
     
 

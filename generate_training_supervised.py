@@ -28,7 +28,7 @@ def get_games(file_path:str):
         "colours":[],
     }
 
-    for game_string in tqdm(game_strings[:10000]):
+    for game_string in tqdm(game_strings[:15000]):
 
         ct = ChessTensor()
 
@@ -36,12 +36,14 @@ def get_games(file_path:str):
 
         result = chess_game.headers["Result"]
 
+        play_count = int(chess_game.headers["PlyCount"])
+
         if result == "1-0":
-            winner = True
+            game_history["rewards"] += [-1 if i%2 else 1 for i in range(play_count)]
         elif result == "0-1":
-            winner = False
+            game_history["rewards"] += [1 if i%2 else -1 for i in range(play_count)]
         else:
-            winner = None
+            game_history["rewards"] += [0]*play_count
 
         for move in chess_game.mainline_moves():
 
@@ -54,12 +56,13 @@ def get_games(file_path:str):
 
             game_history["states"].append(ct.get_representation())
             game_history["actions"].append({move:1.0})
-            game_history["rewards"].append(winner==ct.board.turn if winner is not None else 0)
             game_history["colours"].append(ct.board.turn)
 
             ct.move_piece(move)
 
-    torch.save(game_history, "train_set.pt")
+        
+
+    torch.save(game_history, "train_set_15k.pt")
 
     return game_history
 

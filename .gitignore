@@ -6,3 +6,4 @@ saves/
 *.tar
 stockfish/
 games/
+logs/

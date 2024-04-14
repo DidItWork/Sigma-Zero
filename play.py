@@ -1,6 +1,7 @@
 from chess_tensor import ChessTensor
 import chess
 import torch
+from typing import List
 
 class PlayTensor():
     def __init__(self, chess960=False):
@@ -14,7 +15,7 @@ class PlayTensor():
         """ Get the current board """
         return self.game.board
 
-    def get_move(self) -> list[chess.Move]:
+    def get_move(self) -> List[chess.Move]:
         """ Generates all possible moves """
         move = self.game.get_moves()
         return move

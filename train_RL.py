@@ -6,6 +6,8 @@ from torch.utils.data import Dataset, DataLoader
 from chess_tensor import actionsToTensor
 import time
 import torch.multiprocessing as mp
+from test_update import update_model
+from lightning.pytorch.loggers import TensorBoardLogger
 
 device = "cuda" if torch.cuda.is_available else "cpu"
 
@@ -20,17 +22,17 @@ class chessDataset(Dataset):
 
     def __len__(self):
         return len(self.states)
-    
+
     def __getitem__(self, index):
 
         action_tensor = actionsToTensor(self.actions[index], color=self.colours[index])[0]
 
         action_tensor.requires_grad = False
 
-        reward = torch.tensor(self.rewards[index], requires_grad = False)
+        reward = torch.tensor(self.rewards[index], requires_grad = False, dtype=torch.float)
 
         return self.states[index], action_tensor, reward
-    
+
     @staticmethod
     def collatefn(batch):
 
@@ -54,6 +56,10 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
     # shuffle(training_data)
     # loss = torch.zeros(1).to("cuda").requires_grad_(True)
 
+    # base_model = policyNN({}).to(device)
+
+    logger = TensorBoardLogger("logs", name="supervised_15k")
+
     for steps in range(start_epoch, total_steps):
         
         print(f"Step {steps}/{total_steps}")
@@ -61,6 +67,8 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
         for pg in optimiser.param_groups:
             print("Learning Rate", pg["lr"])
             break
+            
+        model.train()
 
         for idx, batch in enumerate(dataloader):
             # game_history = training_data[index]
@@ -75,6 +83,7 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
             v = v.squeeze(-1)
             p_target = batch["actions"].to(device)
             v_target = batch["rewards"].to(device)
+            # print(p_target.dtype, v_target.dtype)
             # print(v, v_target)
             # print(p[0], p_target[0])
             # p_target = torch.reshape(p_target, (p_target.size()[0], 1))
@@ -92,12 +101,14 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
             #         torch.sum(torch.log(p)*p_target,dim=1)
             # ))
 
-            loss = torch.nn.functional.mse_loss(v, v_target)
-            loss = torch.nn.functional.cross_entropy(p, p_target)
+            mse_loss = torch.nn.functional.mse_loss(v, v_target)
+            print("MSE Loss", mse_loss)
+            ce_loss = torch.nn.functional.cross_entropy(p, p_target)
 
-            print(f"iteration{idx}/{len(dataloader)} loss {loss}")
+            loss = mse_loss+ce_loss
 
-            
+            print(f"iteration {idx}/{len(dataloader)} ce_loss {ce_loss}, mse_loss {mse_loss}")
+
             # print(move_loss.size())
             # if torch.any(move_loss.isnan()):
             #     loss = torch.add(loss, move_loss)
@@ -109,9 +120,22 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
             if lr_scheduler is not None:
                 lr_scheduler.step()
         
+            logger.log_metrics({"MSE Loss":mse_loss, "CE Loss": ce_loss})
         #Save at the end of epoch
-        torch.save(model.state_dict(), "saves/supervised_model.pt")
-        torch.save(optimiser.state_dict(), "saves/supervised_opt.pt")
+        # with torch.inference_mode():
+
+            # base_model.eval()
+            # model.eval()
+
+            # if update_model(current_model=base_model, new_model=model, matches=10):
+                
+                # base_model.load_state_dict(model.state_dict())
+        if steps%5==0:
+
+            torch.save(model.state_dict(), f"saves/supervised_model_15k_{steps}.pt")
+            torch.save(optimiser.state_dict(), f"saves/supervised_opt_15k_{steps}.pt")
+
+                # print("new model saved!")
 
 
     # for game_history in training_data:
