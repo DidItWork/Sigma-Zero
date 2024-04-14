@@ -35,13 +35,13 @@ def play_game(model, args):
     # level_num: (skill_level, time_limit, depth_limit)  
     # 2: (3, 0.02, 5) old model lost to this initial setting roughly 1.5k elo
     # 
-    level = {1: (0, 1, 3),
-             2: (1, 1, 3),
-             3: (2, 1, 3),
-             4: (3, 1, 4),
-             5: (4, 1, 5),
-             6: (5, 1, 6),
-             7: (6, 2, 7),
+    level = {1: (3, 1, 5),
+             2: (4, 1, 5),
+             3: (5, 1, 5),
+             4: (6, 1, 5),
+             5: (7, 1, 5),
+             6: (8, 1, 6),
+             7: (9, 2, 7),
              8: (20, 10, 50)}
 
     level_reached = 1
