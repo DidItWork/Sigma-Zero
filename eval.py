@@ -122,8 +122,14 @@ def play_game(model, args):
 
             if (result == "0-1" and sf_white) or (result == "1-0" and not sf_white):
                 model_score += 1
+        
             elif result == "1/2-1/2":
                 model_score += 0.5
+
+            engine.quit()
+
+            with open("./logs/log.txt", "a") as f:
+                f.write(f"Model at level {level_reached}, score {model_score} at iteration {idx}")
 
             if model_score > 2.5:  # model won 2.5 points on stockfish, proceed to next level
                 break
@@ -133,8 +139,6 @@ def play_game(model, args):
         else:
             level_reached += 1
             print("Model at level", level_reached)
-
-    engine.quit()
 
     return level_reached
 
