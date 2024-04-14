@@ -47,7 +47,7 @@ def play_game(model, args):
     level_reached = 1
     model_score = 0
     while True:
-        for _ in range(5):  # 5 matches
+        for idx in range(5):  # 5 matches
             board = chess.Board()
             chess_tensor = ChessTensor()
 
@@ -59,12 +59,18 @@ def play_game(model, args):
             depth_limit = level[level_reached][2]      
             
             engine.configure({"Skill Level": skill_level})
-    
+
+            turn = 0
+
+            if idx % 2 == 0:
+                sf_white = True
+            else:
+                sf_white = False
             while not board.is_game_over():
 
                 print(board)
 
-                if board.turn:
+                if (turn % 2 == 0 and sf_white) or (turn % 2 == 1 and not sf_white):
 
                     # move = input("Please enter move: ")
 
@@ -104,14 +110,16 @@ def play_game(model, args):
                 
                 #debug code
                 # print(f"Init time: {t2-t1}\nSearch time: {t3-t2}\nMove time: {t4-t3}\nLoop time: {t4-t1}")
-                
+
+                turn += 1
+
             print(board)
 
             # Determine the game result and assign rewards
             result = board.result()
             print("Result", result)
 
-            if result == "0-1":
+            if (result == "0-1" and sf_white) or (result == "1-0" and not sf_white):
                 model_score += 1
             elif result == "1/2-1/2":
                 model_score += 0.5
@@ -140,7 +148,7 @@ if __name__ == "__main__":
         'batch_size': 64
     }
 
-    model_weights = torch.load("./supervised_model_15k_30.pt")
+    model_weights = torch.load("./supervised_model_15k_45.pt")
 
     model = policyNN(config).to(device)
 
