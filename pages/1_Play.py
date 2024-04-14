@@ -17,16 +17,43 @@ with left_column:
     st.subheader(human_color)
     st.caption('Human')
     st.markdown('---')
+
+    # old submit function
+    # def submit():
+    #     st.session_state['current_move'] = st.session_state['human_move']
+    #     current_move = st.session_state['current_move']
+    #     try:
+    #         current_move = chess.Move.from_uci(current_move)
+    #         st.session_state['opponent_move'] = st.session_state['game'].play_move(current_move)
+    #     except:
+    #         st.error(f'{current_move} is invalid.')
+    #         print('Invalid move.')
+    #     st.session_state['no_of_moves'] += 2
+    #     st.session_state['human_move'] = ""
+
+    # new submit function
     def submit():
-        st.session_state['current_move'] = st.session_state['human_move']
-        current_move = st.session_state['current_move']
+        user_move_input = st.session_state['human_move']
+        current_move = None
         try:
-            current_move = chess.Move.from_uci(current_move)
-            st.session_state['opponent_move'] = st.session_state['game'].play_move(current_move)
+            current_move = chess.Move.from_uci(user_move_input)
         except:
-            st.error(f'{current_move} is invalid.')
-            print('Invalid move.')
-        st.session_state['no_of_moves'] += 2
+            st.error(f"{user_move_input} is not a valid UCI format. Please check for typos or CAPSLOCK.")
+            return
+        
+        # Retrieve the list of valid moves
+        # valid_moves = [str(move) for move in st.session_state['game'].get_move()]
+        
+        if str(current_move) in valid_moves_list:
+            st.session_state['current_move'] = user_move_input
+            try:
+                st.session_state['opponent_move'] = st.session_state['game'].play_move(current_move)
+                st.session_state['no_of_moves'] += 2
+            except Exception as e:
+                st.error(f"An error occurred when making the move: {e}")
+        else:
+            st.error(f"{user_move_input} is not a valid move. Please try one of these: {valid_moves_list}")
+
         st.session_state['human_move'] = ""
 
     st.text_input("Enter your move (e.g. g1h3)", key="human_move", on_change=submit)
