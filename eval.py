@@ -49,10 +49,11 @@ def play_game(model, args):
         # track the score for this level
         model_score = 0
         for idx in range(5):  # 5 matches
-            board = chess.Board()
-            chess_tensor = ChessTensor()
+            chess_tensor = ChessTensor(chess960=args['chess960'])
+            board = chess_tensor.board
 
-            stockfish_path = "./stockfish/stockfish-windows-x86-64-avx2.exe"
+            # stockfish_path = "./stockfish/stockfish-windows-x86-64-avx2.exe"
+            stockfish_path = "/home/abram/Developer/Sigma-Zero/stockfish-ubuntu-x86-64/stockfish/stockfish-ubuntu-x86-64"
             engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
 
             skill_level = level[level_reached][0]
@@ -102,8 +103,6 @@ def play_game(model, args):
                     print("Search Time", t2-t1)
 
                 print("Board", chess_tensor.board.turn)
-
-                board.push(best_move)
                 
                 # Update the chess tensor with the new move
                 chess_tensor.move_piece(best_move)
@@ -153,21 +152,25 @@ if __name__ == "__main__":
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4, 
-        'batch_size': 64
+        'batch_size': 64,
+        'chess960': True
     } 
     model_path = "./supervised_model_15k_45.pt"
 
+    start_time = time.time()
+
     with open("./logs/log.txt", "a") as f:
-        f.write(f"Model {model_path}")
+        f.write(f"\nModel {model_path}\nStart time:{start_time}\n")
 
     model_weights = torch.load(model_path)
 
     model = policyNN(config).to(device)
 
-    ct = ChessTensor()
-
     model.load_state_dict(model_weights)
     
     level_reached = play_game(model=model, args=args)
+
+    with open("./logs/log.txt", "a") as f:
+        f.write(f"\nElapsed time: {time.time() - start_time}\n")
 
     print(f"Model reached level {level_reached}")
