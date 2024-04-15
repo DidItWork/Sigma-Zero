@@ -54,7 +54,7 @@ if st.button('Start'):
     st.session_state['game'] = PlayTensor()
     st.session_state['game'].start_new_game(chess960=mode, color=color)
 
-    time.sleep(2)  # Simulate time delay for game setup
+    # time.sleep(2)  # Simulate time delay for game setup
 
     # Redirect to 'Play' page
     st.switch_page("pages/1_Play.py") 
