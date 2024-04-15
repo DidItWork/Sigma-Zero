@@ -95,14 +95,14 @@ if __name__ == "__main__":
     config = dict()
     args = {
         'C': 2,
-        'num_searches': 800,
+        'num_searches': 200,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4, 
         'batch_size': 64
     }
 
-    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_40.pt")
+    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_45.pt")
 
     model = policyNN(config).to(device)
 

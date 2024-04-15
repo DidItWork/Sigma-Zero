@@ -24,7 +24,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # else:
 #     device = torch.device("mps")
 
-
+@torch.no_grad()
 def play_game(model, args):
     """
     Simulates a single game of chess, with the AI playing against itself.
@@ -49,7 +49,7 @@ def play_game(model, args):
         board = chess.Board()
         chess_tensor = ChessTensor()
 
-        stockfish_path = "./stockfish/stockfish-windows-x86-64-avx2.exe"
+        stockfish_path = "/home/benluo/school/Sigma-Zero/stockfish/stockfish-ubuntu-x86-64-avx2"
         engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
 
         skill_level = level[level_reached][0]
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     config = dict()
     args = {
-        'C': 2,
+        'C': 5,
         'num_searches': 800,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
@@ -132,13 +132,13 @@ if __name__ == "__main__":
         'batch_size': 64
     }
 
-    model_weights = torch.load("./supervised_model_15k_30.pt")
+    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_45.pt")
 
     model = policyNN(config).to(device)
 
     ct = ChessTensor()
 
-    model.load_state_dict(model_weights, strict=False)
+    model.load_state_dict(model_weights)
     
     level_reached = play_game(model=model, args=args)
 

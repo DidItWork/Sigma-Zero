@@ -61,8 +61,9 @@ class Node:
     
     def get_ucb(self, vc, vsum, prior):
 
-        # q_value = 1 - (vsum/vc + 1) / 2
-        q_value = 1-(vsum/(vc+1e-7)+1)/2
+        q_value = 1 - (vsum/(vc+1e-7) + 1) / 2
+        # q_value = -vsum/(vc+1e-7)
+        # print(q_value)
         # if child.visit_count == 0:
         #     q_value = 0
         # else:

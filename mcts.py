@@ -179,7 +179,7 @@ if __name__ == "__main__":
     model.eval()
     args = {
         'C': 2,
-        'num_searches': 200,
+        'num_searches': 45,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4,

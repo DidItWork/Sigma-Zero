@@ -28,13 +28,13 @@ def initialize_empty_boards():
     empty_boards = [torch.zeros((119, 8, 8)) for _ in range(7)]
     return empty_boards
 
-def play_game(model, args):
+def play_game(model, args, c960=False):
     """
     Simulates a single game of chess, with the AI playing against itself.
     Returns the game history, including states, actions, and rewards.
     """
-    board = chess.Board()
-    chess_tensor = ChessTensor()
+    chess_tensor = ChessTensor(chess960=c960)
+    print(chess_tensor.board)
 
     game_history = {
         'states': [],
@@ -43,10 +43,10 @@ def play_game(model, args):
         'colours': [],
     }
     
-    while not board.is_game_over():
+    while not chess_tensor.board.is_game_over():
 
         # print("ID of process running worker1: {}".format(os.getpid()))
-        # print(board)
+        # print(chess_tensor.board)
 
         t1 = time.perf_counter()
 
@@ -62,7 +62,7 @@ def play_game(model, args):
         # Use MCTS to determine the best move
         # This function might need to be aware of whose turn it is
         # move = mcts.search(board) ############ IDK IF THIS FUNCTION ARGUMENT RECEIVES THE STATE TENSOR OR THE BOARD
-        action_probs = mcts.search(board, verbose=False)
+        action_probs = mcts.search(chess_tensor.board, verbose=False)
 
         t3 = time.perf_counter()
 
@@ -72,10 +72,9 @@ def play_game(model, args):
         # Save the state and action
         game_history['states'].append(state_tensor)
         game_history['actions'].append(action_probs) ### SHOULD THIS BE THE MOVE OR THE BEST_MOVE?
-        game_history["colours"].append(board.turn)
+        game_history["colours"].append(chess_tensor.board.turn)
 
         # Apply the move
-        board.push(best_move)
         
         # Update the chess tensor with the new move
         chess_tensor.move_piece(best_move)
@@ -85,10 +84,10 @@ def play_game(model, args):
         #debug code
         # print(f"Init time: {t2-t1}\nSearch time: {t3-t2}\nMove time: {t4-t3}\nLoop time: {t4-t1}")
         
-    print(board)
+    print(chess_tensor.board)
 
     # Determine the game result and assign rewards
-    result = board.result()
+    result = chess_tensor.board.result()
     print("Result", result)
     reward = 0
     if result == '1-0':  # White wins
@@ -138,7 +137,7 @@ def play_game(model, args):
     
 #     return mini_batches
 
-def generate_training_data(model, num_games=1, args=None, return_dict=None):
+def generate_training_data(model, num_games=1, args=None, return_dict=None, c960=False):
     # training_data = []
 
     games_history = {
@@ -156,7 +155,7 @@ def generate_training_data(model, num_games=1, args=None, return_dict=None):
 
     for i in range(num_games):
         print(f"Game {i+1}/{num_games}")
-        game_history = play_game(model, args)
+        game_history = play_game(model, args, c960=c960)
         # training_data.append(game_history)
 
         # # Print the game history for debugging
