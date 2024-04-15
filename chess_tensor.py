@@ -68,6 +68,7 @@ class ChessTensor():
     def __start_board(self, chess960=False):
         """ Initialize the board as a tensor """
         if chess960:
+            print('Starting chess960')
             self.board = chess.Board.from_chess960_pos(random.randint(0, 959))
         else:
             self.board = chess.Board()
