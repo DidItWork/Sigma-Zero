@@ -129,7 +129,7 @@ def play_game(model, args):
             engine.quit()
 
             with open("./logs/log.txt", "a") as f:
-                f.write(f"Model at level {level_reached}, score {model_score} at iteration {idx}")
+                f.write(f"Model at level {level_reached}, score {model_score} at iteration {idx}\n")
 
             if model_score > 2.5:  # model won 2.5 points on stockfish, proceed to next level
                 break
@@ -139,6 +139,8 @@ def play_game(model, args):
         else:
             level_reached += 1
             print("Model at level", level_reached)
+            with open("./logs/log.txt", "a") as f:
+                f.write(f"\n")
 
     return level_reached
 
@@ -152,9 +154,13 @@ if __name__ == "__main__":
         'num_selfPlay_iterations': 500,
         'num_epochs': 4, 
         'batch_size': 64
-    }
+    } 
+    model_path = "./supervised_model_15k_45.pt"
 
-    model_weights = torch.load("./supervised_model_15k_45.pt")
+    with open("./logs/log.txt", "a") as f:
+        f.write(f"Model {model_path}")
+
+    model_weights = torch.load(model_path)
 
     model = policyNN(config).to(device)
 
