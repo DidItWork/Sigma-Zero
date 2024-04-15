@@ -52,8 +52,8 @@ def play_game(model, args):
             chess_tensor = ChessTensor(chess960=args['chess960'])
             board = chess_tensor.board
 
-        stockfish_path = "/home/benluo/school/Sigma-Zero/stockfish/stockfish-ubuntu-x86-64-avx2"
-        engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
+            stockfish_path = "/home/benluo/school/Sigma-Zero/stockfish/stockfish-ubuntu-x86-64-avx2"
+            engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
 
             skill_level = level[level_reached][0]
             time_limit = level[level_reached][1]
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         'batch_size': 64,
         'chess960': True
     } 
-    model_path = "./supervised_model_15k_45.pt"
+    model_path = "/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_45.pt"
 
     start_time = time.time()
 
