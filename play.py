@@ -1,5 +1,7 @@
 from chess_tensor import ChessTensor
 import chess
+import torch
+from typing import List
 import copy
 import chess.svg
 from network import policyNN
@@ -12,14 +14,15 @@ class PlayTensor():
         config = dict()
         self.args = {
             'C': 2,
-            'num_searches': 800,
+            'num_searches': 2,
             'num_iterations': 3,
             'num_selfPlay_iterations': 500,
             'num_epochs': 4, 
             'batch_size': 64    
         }
 
-        model_weights = torch.load("/Users/raymondharrison/Desktop/AI/Sigma-Zero/saves/supervised_model_15k_45.pt", map_location=torch.device('cpu'))
+        # CHANGGEGEEEEEEEE TODO TODO change path and map location
+        model_weights = torch.load("./saves/supervised_model_15k_45.pt", map_location=torch.device('cpu'))
         print(model_weights.keys())
         self.model = policyNN(config)
         self.model.load_state_dict(model_weights)
@@ -32,33 +35,33 @@ class PlayTensor():
             self.game = ChessTensor(chess960)
         else:
             self.game = ChessTensor(chess960)
-            self.__generate_move()
+            
+            # Have the model play a move here
+            mcts = MCTS0(game=self.game, model=self.model, args=self.args)  # Create a new MCTS object for every turn
+            action_probs = mcts.search(self.game.board, verbose=False, learning=False)
+            best_move = max(action_probs, key=action_probs.get)
+            self.game.move_piece(best_move)
 
-    def get_move(self) -> list[chess.Move]:
+    def get_board(self) -> chess.Board:
+        """ Get the current board """
+        return self.game.board
+
+    def get_move(self) -> List[chess.Move]:
         """ Generates all possible moves """
         move = self.game.get_moves()
         return move
 
-    def play_move(self, move: chess.Move):
+    def play_move(self, move: chess.Move) -> str:
         """ Allow the user to play a move """
         self.game.move_piece(move)
-        move = self.__generate_move()
-        # NOTE: Depends how smooth you want the GUI gameplay to be
-        return move
         
-    def __generate_move(self) -> None:
-        """ Let the model play moves """
-        move = self.get_move()[0]
-
-        # # Have the model play a move here
+        # Have the model play a move here
         mcts = MCTS0(game=self.game, model=self.model, args=self.args)  # Create a new MCTS object for every turn
-
         action_probs = mcts.search(self.game.board, verbose=False, learning=False)
         best_move = max(action_probs, key=action_probs.get)
-
         self.game.move_piece(best_move)
-
-        return move
+        
+        return str(best_move)
     
     def check_if_end(self) -> bool:
         """ Check if the game has ended """
@@ -75,14 +78,14 @@ class PlayTensor():
 
         return True
     
-    def get_previous_board_Svg(self, moves: int) -> bool:
+    def get_previous_board_svg(self, moves: int) -> bool:
         """ Get the old board image """
         # Make deep copy of the chess tensor
-        old_board = copy.deepcopy(self.game)
+        old_board = copy.deepcopy(self.game.board)
         for _ in range(moves):
-            old_board.undo_move()
+            old_board.pop()
 
-        svg = chess.svg.board(old_board.board)
+        svg = chess.svg.board(old_board)
         with open("board.svg", "w") as f:
             f.write(svg)
 
