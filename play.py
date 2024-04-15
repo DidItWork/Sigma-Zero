@@ -4,10 +4,29 @@ import torch
 from typing import List
 import copy
 import chess.svg
+from network import policyNN
+import torch
+from mcts import MCTS0
 
 class PlayTensor():
     def __init__(self, chess960=False):
-        self.model = None # TODO: Load model here
+
+        config = dict()
+        self.args = {
+            'C': 2,
+            'num_searches': 800,
+            'num_iterations': 3,
+            'num_selfPlay_iterations': 500,
+            'num_epochs': 4, 
+            'batch_size': 64    
+        }
+
+        model_weights = torch.load("/Users/raymondharrison/Desktop/AI/Sigma-Zero/saves/supervised_model_15k_45.pt", map_location=torch.device('cpu'))
+        print(model_weights.keys())
+        self.model = policyNN(config)
+        self.model.load_state_dict(model_weights)
+
+        # self.model = None # TODO: Load model here
 
     def start_new_game(self, chess960=False, color=chess.WHITE):
         """ Restart a game from the start """
@@ -35,12 +54,15 @@ class PlayTensor():
         
     def __generate_move(self) -> None:
         """ Let the model play moves """
-        # Have the model play a move here
-        board = self.get_board()
-        if self.check_if_end():
-            return
-        move = self.model.get_best_move(board) # How do we run inference here? 
-        self.game.move_piece(move)
+        move = self.get_move()[0]
+
+        # # Have the model play a move here
+        mcts = MCTS0(game=self.game, model=self.model, args=self.args)  # Create a new MCTS object for every turn
+
+        action_probs = mcts.search(self.game.board, verbose=False, learning=False)
+        best_move = max(action_probs, key=action_probs.get)
+
+        self.game.move_piece(best_move)
         return move
     
     def check_if_end(self) -> bool:
