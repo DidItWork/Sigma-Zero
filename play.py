@@ -1,5 +1,7 @@
 from chess_tensor import ChessTensor
 import chess
+import torch
+from typing import List
 import copy
 import chess.svg
 from network import policyNN
@@ -34,7 +36,11 @@ class PlayTensor():
             self.game = ChessTensor(chess960)
             self.__generate_move()
 
-    def get_move(self) -> list[chess.Move]:
+    def get_board(self) -> chess.Board:
+        """ Get the current board """
+        return self.game.board
+
+    def get_move(self) -> List[chess.Move]:
         """ Generates all possible moves """
         move = self.game.get_moves()
         return move
@@ -57,7 +63,6 @@ class PlayTensor():
         best_move = max(action_probs, key=action_probs.get)
 
         self.game.move_piece(best_move)
-
         return move
     
     def check_if_end(self) -> bool:

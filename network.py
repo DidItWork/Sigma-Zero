@@ -1,6 +1,9 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from chess_tensor import actionsToTensor
+from random import shuffle
 from torch import tensor, Tensor
 from typing import Optional, Callable
 
@@ -8,6 +11,8 @@ from typing import Optional, Callable
 Copied from pytorch implementation of resnet
 https://pytorch.org/vision/stable/_modules/torchvision/models/resnet.html
 """
+
+device = "cuda" if torch.cuda.is_available else "cpu"
 
 def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
     """3x3 convolution with padding"""
@@ -96,26 +101,47 @@ class policyNN(nn.Module):
 
         inc = config.get("in_channels", 119)
 
-        self.conv1 = nn.Conv2d(inc, 256, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(inc, 256, kernel_size=3, padding=1, bias=False)
+        self.norm_layer = nn.BatchNorm2d(256)
 
-        self.conv_p1 = nn.Conv2d(256, 256, kernel_size=1)
+        self.conv_p1 = nn.Conv2d(256, 256, kernel_size=1, bias=False)
         self.conv_p2 = nn.Conv2d(256, 73, kernel_size=1)
+        self.p_norm = nn.BatchNorm2d(73)
 
-        self.conv_v1 = nn.Conv2d(256, 1, kernel_size=1)
+        self.conv_v1 = nn.Conv2d(256, 1, kernel_size=1, bias=False)
+        self.v_norm = nn.BatchNorm2d(1)
         self.fc_v1 = nn.Linear(64, 256)
         self.fc_v2 = nn.Linear(256, 1)
 
-        self.resnet_blocks = nn.Sequential()
+        self.resnet_blocks = []
+
+        dp = config.get("dropout", 0.)
+
+        v_dp = config.get("value dropout", 0.)
+        p_dp = config.get("policy dropout", 0.)
+
+        self.v_do = nn.Dropout(p=v_dp)
+        self.p_do = nn.Dropout(p=p_dp)
 
         for _ in range(19):
 
             self.resnet_blocks.append(BasicBlock(256, 256, 1))
+            self.resnet_blocks.append(nn.Dropout(p=dp))
+
+        self.resnet_blocks = nn.Sequential(*self.resnet_blocks)
+
+        # print(self.resnet_blocks)
 
     def policy_head(self, x: tensor) -> tensor:
 
         x = self.conv_p1(x)
         x = nn.ReLU()(x)
+
+        x = self.p_do(x)
+
         x = self.conv_p2(x)
+        x = self.p_norm(x)
+        x = nn.ReLU()(x)
         x = torch.flatten(x, start_dim=1)
 
         return x
@@ -123,40 +149,48 @@ class policyNN(nn.Module):
     def value_head(self, x: tensor) -> tensor:
 
         x = self.conv_v1(x)
+        x = self.v_norm(x)
         x = nn.ReLU()(x)
+
         x = torch.flatten(x, start_dim=1)
+
         x = self.fc_v1(x)
+        x = nn.ReLU()(x)
+
+        x = self.v_do(x)
+
         x = self.fc_v2(x)
         x = torch.tanh(x)
 
         return x   
 
-    def forward(self, x: tensor, policy_mask: tensor = None) -> tuple:
+    def forward(self, x: tensor, inference=False) -> tuple:
 
         x = self.conv1(x)
+        x = self.norm_layer(x)
         x = nn.ReLU()(x)
 
         x = self.resnet_blocks(x)
 
-        policy = self.policy_head(x).cpu()
+        policy = self.policy_head(x)
 
-        value = self.value_head(x).cpu()
+        value = self.value_head(x)
 
         # print(x.shape, policy.shape)
 
-        if policy_mask == None:
+        # if policy_mask == None:
 
-            policy_mask = torch.ones(policy.shape)
-        
-        policy *= policy_mask
+        #     policy_mask = torch.ones(policy.shape)
 
-        #masked softmax
+        # #masked softmax
 
-        policy_exp = torch.exp(policy)
+        # policy_exp = torch.exp(policy)*policy_mask
 
-        policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
+        # policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
 
-        policy = policy_exp/policy_exp_sum
+        # policy = policy_exp/policy_exp_sum
+
+        if inference: policy = nn.Softmax(dim=1)(policy)
 
         return (policy, value)
 
@@ -166,15 +200,13 @@ if __name__=="__main__":
 
     config = dict()
 
-    network = policyNN(config).to("cuda")
+    network = policyNN(config).to(device)
 
     game = ChessTensor()
 
-    board = game.get_representation().unsqueeze(0).cuda()
+    board = game.get_representation().unsqueeze(0).to(device)
 
     policy, value = network(board)
 
     print(policy)
     print(value)
-
-

@@ -1,2 +1,9 @@
 venv/
 *__pycache__/
+*.pt
+dummy.py
+saves/
+*.tar
+stockfish/
+games/
+logs/
