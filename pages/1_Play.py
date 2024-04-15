@@ -74,7 +74,7 @@ with center_column:
     if c1.button('<', key='c1_button'):
         no_of_moves = st.session_state['no_of_moves']
         st.session_state['prev_board_counter'] = min(no_of_moves, st.session_state['prev_board_counter'] + 1)
-        st.session_state['game'].get_previous_board_Svg(st.session_state['prev_board_counter'])
+        st.session_state['game'].get_previous_board_svg(st.session_state['prev_board_counter'])
     if c3.button('\>>', key='c3_button'):
         st.session_state['prev_board_counter'] = 0
     st.image('./board.svg', use_column_width='always')
