@@ -9,7 +9,7 @@ from network import policyNN
 from chess_tensor import ChessTensor
 import torch
 import time
-import os
+import json
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -160,7 +160,8 @@ if __name__ == "__main__":
     start_time = time.time()
 
     with open("./logs/log.txt", "a") as f:
-        f.write(f"\nModel {model_path}\nStart time:{start_time}\n")
+        f.write(f"\n-------------------------------------------------\n")
+        f.write(f"\nModel {model_path}\nStart time:{start_time}\n{json.dumps(args, indent=2)}\n")
 
     model_weights = torch.load(model_path)
 
