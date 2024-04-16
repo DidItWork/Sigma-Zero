@@ -1,7 +1,5 @@
 import streamlit as st
-import numpy as np
 import pandas as pd
-import time
 
 ############# DUMMY DATA#############
 # COMMENT/UNCOMMENT TO SEE THE DIFFERENCE
@@ -17,7 +15,7 @@ import time
 
 # csv = st.session_state.df.to_csv(index=False).encode('utf-8')
 
-st.subheader("See how you perfrom against SigmaZero")
+st.subheader("See how you perfrom against SigmaZero (ELO: 1700+)")
 st.markdown('please play a game and save the game to see the stats here.')
 st.markdown('---')
 
