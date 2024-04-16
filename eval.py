@@ -129,10 +129,10 @@ def play_game(model, args):
             with open("./logs/log.txt", "a") as f:
                 f.write(f"Model at level {level_reached}, score {model_score} at iteration {idx}\n")
 
-            if model_score > 2.5:  # model won 2.5 points on stockfish, proceed to next level
+            if model_score >= 2.5:  # model won 2.5 points on stockfish, proceed to next level
                 break
 
-        if model_score <= 2.5:
+        if model_score < 2.5:
             break
         else:
             level_reached += 1
