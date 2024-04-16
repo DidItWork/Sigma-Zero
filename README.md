@@ -21,7 +21,10 @@ $$\text{UCB} = \frac{W_i}{N_i}+p_ic\frac{\sqrt{N_i}}{1+n_i}$$
 1. Self-Play until the game ends using MCTS and $f_\theta$
 2. Store the chosen action taken at each state and the values of the node (-1,0,1) depending on the player and whether he won or lost the game. One training sample should contain: (board state s, the action chosen $\pi$, the value of the node z)
 3. Minimize loss function of the training samples in the batch.
-$$l = (z-v)^2-\pi^T\log{p}+c||\theta||^2$$, $c$ is a constant
+
+$$l = (z-v)^2-\pi^T\log{p}+c||\theta||^2$$
+
+$c$ is a constant
 
 ### Board State Representation
 
@@ -67,3 +70,51 @@ The actions are represented with an 8x8x73 tensor which can be flattened into a 
 - The first 8x7 channels/planes represent the number of squares to move (1 to 7) for the queen/rook/pawn/bishop/king as well as the direction. (Movement of pawn from 7th rank is assumed to be a promotion to queen)
 - The next 8 channels/planes represent the direction to move the knight
 - The last 9 channels represent the underpromotion of the pawn to knight, bishop, and rook resp. (through moving one step from the 7th rank or a diagonal capture from the 7th rank).
+
+
+## Setting up Graphical User Interface (GUI)
+
+### Pre-Requisites
+
+We will be using Miniconda as the environment manager, but you can adapt the steps for any similar tool you might prefer.
+
+Ensure Miniconda is installed on your system. If not installed, you can download it from Miniconda's official website. This project is developed using Python 3.11, so it is advisable to use a compatible version of Miniconda.
+After installing miniconda, clone our project repository by running:
+
+
+`git clone https://github.com/DidItWork/Sigma-Zero`
+
+
+### Environment Setup and Running Application
+
+1. Create the Environment: 
+
+    Navigate to the root directory of the project file where you can find `environment.yml`. This file lists all the necessary packages and their specific versions required to run the application.
+
+    Create the Conda environment using the following command:
+
+    `conda env create -f environment.yml`
+
+2. Activate the Environment: 
+
+    After creating the environment, activate it using:
+
+    `conda activate sigmazero`
+
+3. Run the Apllication: 
+
+    Start the application using Streamlit by running:
+
+    `streamlit run Home.py`
+
+### Troubleshooting
+
+1. Dependency Errors: 
+
+    If you encounter errors related to missing packages or version conflicts, ensure that the environment.yml file includes all necessary dependencies with correct versions. Ensure that you are using the right version of streamlit:
+
+    `pip install streamlit==1.33.0`
+
+2. Environment Activation: 
+
+    Make sure you activate the correct Conda environment before attempting to run the application. If the environment name is incorrect, check the name specified in the environment.yml file.
