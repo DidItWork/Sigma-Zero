@@ -99,6 +99,8 @@ args = {
 
 We test our models against each level of Stockfish in a best of 5 format, results can be found in `logs/log.txt`. You can load your model weights and the path to your Stockfish engine in `eval.py`
 
+You can download the model (here)[https://sutdapac-my.sharepoint.com/:f:/g/personal/benjamin_luo_mymail_sutd_edu_sg/EmlUJ6kaxjdKmSseXeqKeXEB_oO8OFYyYRJvr4W63ibw0A?e=fvN6vI].
+
 ```
 python eval.py
 ```
