@@ -105,7 +105,9 @@ python eval.py
 
 ## Results
 
-Our network was trained on 15000 >2000 ELO Player data for 60 epochs and the best results are shown in the table below:
+Our network was trained on 15000 >2000 ELO Player data for 60 epochs and the best results are shown in the table below.
+
+The results are obtained from best of 5 games against different levels of Stockfish, a win is awarded 1 point and a draw is awarded 0.5 point. The Sigmazero AI and Stockfish will take turns to play White and Sigmazero will advance to the next level if it gets 2.5 points or more
 
 ![sf_levels](/images/sf_levels.png)
 
