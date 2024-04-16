@@ -33,13 +33,9 @@ class Node:
 
         # print("selecting", len(self.explored))
 
-        t1 = time.perf_counter()
-
         vc = torch.tensor([child.visit_count for child in self.children])
         vsum = torch.tensor([child.value_sum for child in self.children])
         prior = torch.tensor([child.prior for child in self.children])
-
-        t2 = time.perf_counter()
 
         # for i in self.explored:
         #     t1 = time.perf_counter()
@@ -61,7 +57,7 @@ class Node:
     
     def get_ucb(self, vc, vsum, prior):
 
-        q_value = 1 - (vsum/(vc+1e-7) + 1) / 2
+        q_value = 1 - (vsum/(vc+1e-6) + 1) / 2
         # q_value = -vsum/(vc+1e-7)
         # print(q_value)
         # if child.visit_count == 0:
@@ -83,7 +79,6 @@ class Node:
         # if policy is not None:
 
         for action, prob in policy:
-            if prob > 0:
             # print(self.state)
             # print(action, prob)
 
@@ -92,17 +87,16 @@ class Node:
             # child_state = self.game.get_next_state(child_state, action, 1)
             # child_state = self.game.change_perspective(child_state, player=-1)
 
-                child = Node(game=None,
-                                args=self.args,
-                                state=None,
-                                parent=self,
-                                action_taken=action,
-                                prior=prob.item(),
-                                color=not self.color)
-                self.children.append(child)
+            child = Node(game=None,
+                            args=self.args,
+                            state=None,
+                            parent=self,
+                            action_taken=action,
+                            prior=prob.item(),
+                            color=not self.color)
+            self.children.append(child)
 
-            # self.explored.append(np.random.randint(len(self.children)))
-        
+
         # else:
 
         #     rand_child = np.random.choice([i for i in range(len(self.children)) if i not in self.explored])

@@ -204,20 +204,8 @@ class ChessTensor():
         if self.board.turn:
             return torch.flip(self.representation, [1])
         else:
-            # Changing order of representation
-            # copy = self.representation.clone()
 
-            # # Swapping order of representation for P1
-            # for i in range(self.T):
-            #     start_channel = i * self.M
-            #     end_channel = start_channel + 6
-
-            #     copy[start_channel: end_channel, :, :], copy[start_channel + 6: start_channel + 12, :, :] = copy[start_channel + 6: start_channel + 12, :, :].clone(), copy[start_channel: end_channel, :, :].clone()
-                
-            # # Swapping order of representation for L
-            # copy[-5:-3, :, :], copy[-3:-1, :, :] = copy[-3:-1, :, :].clone(), copy[-5:-3, :, :].clone()
-
-            # # Flipping the board for black
+            # Flipping the board for black
             return torch.flip(self.black_representation, [2])
         
     def get_moves(self) -> List[chess.Move]:
@@ -236,25 +224,12 @@ class ChessTensor():
     def get_valid_moves(self ,state):
         # print("get valid moves", state)
         return list(state.legal_moves)
-    
-    # def check_win(self, state):
-    #     if action == None:
-    #         return False
-        
-    #     state.push(action)
-
-    #     if state.is_checkmate():
-    #         state.pop()
-    #         return True
-    #     else:
-    #         state.pop()
-    #         return False
 
     def get_value_and_terminated(self):
         if self.board.is_game_over():
             winner = self.board.outcome().winner
-            print(winner, self.board.turn)
-            print(self.board)
+            # print(winner, self.board.turn)
+            # print(self.board)
             if winner == None:
                 #Draw
                 return 0, True
@@ -515,29 +490,6 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE, queen_prom
 
     return chess_moves
 
-
-# chesser = ChessTensor(chess960=True)
-
-# for i in range(12):
-#     moves = chesser.get_moves()
-#     chesser.move_piece(moves[0])
-
-# rep1 = chesser.get_representation()
-
-# moves = chesser.get_moves()
-# chesser.move_piece(moves[0])
-# chesser.undo_move()
-
-# rep2 = chesser.get_representation()
-
-# # 14, 28, 42, 56, 70, 84, 98, 112
-# # 0 , 14, 28, 42, 56, 70, 84, 98
-
-
-# for i in range(119):
-#     if not torch.all(rep1[i] == rep2[i]):
-#         print("expected", rep1[i])
-#         print("got", rep2[i])
 
 
 
