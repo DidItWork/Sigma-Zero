@@ -495,42 +495,6 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE, queen_prom
 
 if __name__=="__main__":
 
-    # pass
-
-    # #for testing
-
-    # move = torch.zeros(8*8*73)
-    # move = torch.zeros(8*8*73)
-
-    # board = chess.Board()
-    # board = chess.Board()
-
-    # move[8*8*72] = 1
-    # move[8*8*72] = 1
-
-    # print(tensorToAction(move))
-    # print(tensorToAction(move))
-
-    # game = ChessTensor()
-    # game.move_piece(chess.Move.from_uci("e2e4"))
-    # game.move_piece(chess.Move.from_uci("d7d6"))
-    # board = game.get_representation()
-    # print("white\n",board[0])
-    # print(board[14])
-    # print("black\n",board[6])
-    # print(board[20])
-    # game = ChessTensor()
-    # game.move_piece(chess.Move.from_uci("e2e4"))
-    # game.move_piece(chess.Move.from_uci("d7d6"))
-    # board = game.get_representation()
-    # print("white\n",board[0])
-    # print(board[14])
-    # print("black\n",board[6])
-    # print(board[20])
-
-    # move = chess.Move.from_uci("a1e5")
-    # print(tensorToAction(actionToTensor(move)))
-
     action = chess.Move.from_uci("e7e8n")
 
     action2 = chess.Move.from_uci("e2d1r")
@@ -540,5 +504,3 @@ if __name__=="__main__":
     at2 = actionToTensor(action2,chess.BLACK)
 
     print(tensorToAction(at2,chess.BLACK, dict({action.uci():True, action2.uci():True})))
-    # move = chess.Move.from_uci("a1e5")
-    # print(tensorToAction(actionToTensor(move)))

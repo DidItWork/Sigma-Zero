@@ -62,6 +62,6 @@ def get_games(file_path:str):
 if __name__ == "__main__":
 
     #File path to pgn.bz2 file
-    file_path = ""
+    file_path = "/home/benluo/school/Sigma-Zero/games/ficsgamesdb_2023_chess2000_nomovetimes_387378.pgn.bz2"
 
     game_history = get_games(file_path)
