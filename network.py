@@ -176,20 +176,6 @@ class policyNN(nn.Module):
 
         value = self.value_head(x)
 
-        # print(x.shape, policy.shape)
-
-        # if policy_mask == None:
-
-        #     policy_mask = torch.ones(policy.shape)
-
-        # #masked softmax
-
-        # policy_exp = torch.exp(policy)*policy_mask
-
-        # policy_exp_sum = torch.sum(policy_exp, dim=1)-torch.sum(policy_mask)
-
-        # policy = policy_exp/policy_exp_sum
-
         if inference: policy = nn.Softmax(dim=1)(policy)
 
         return (policy, value)

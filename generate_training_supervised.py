@@ -4,7 +4,7 @@ import chess.pgn
 import bz2
 import io
 from tqdm import tqdm
-from chess_tensor import ChessTensor, actionsToTensor, tensorToAction
+from chess_tensor import ChessTensor
 
 @torch.no_grad()
 def get_games(file_path:str):
@@ -47,13 +47,6 @@ def get_games(file_path:str):
 
         for move in chess_game.mainline_moves():
 
-            #Check move tensor
-            # mt, queen_promotion = actionsToTensor([move], ct.board.turn)
-
-            # move2 = tensorToAction(mt,ct.board.turn,queen_promotion=queen_promotion)
-
-            # assert move==move2[0]
-
             game_history["states"].append(ct.get_representation())
             game_history["actions"].append({move:1.0})
             game_history["colours"].append(ct.board.turn)
@@ -68,9 +61,7 @@ def get_games(file_path:str):
 
 if __name__ == "__main__":
 
-    # try:
-    #     game_history = torch.load("train_set.pt")
-    
-    # except:
+    #File path to pgn.bz2 file
+    file_path = "/home/benluo/school/Sigma-Zero/games/ficsgamesdb_2023_chess2000_nomovetimes_387378.pgn.bz2"
 
-    game_history = get_games("/home/benluo/school/Sigma-Zero/games/ficsgamesdb_2019_chess2000_nomovetimes_387382.pgn.bz2")
+    game_history = get_games(file_path)

@@ -7,3 +7,4 @@ saves/
 stockfish/
 games/
 logs/
+*.csv

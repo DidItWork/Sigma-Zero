@@ -39,6 +39,8 @@ def play_game(model, args):
 
         if board.turn:
 
+            #Uncomment for user play
+
             # move = input("Please enter move: ")
 
             # best_move = chess.Move.from_uci(move.strip())
@@ -95,14 +97,14 @@ if __name__ == "__main__":
     config = dict()
     args = {
         'C': 2,
-        'num_searches': 800,
+        'num_searches': 10,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4, 
         'batch_size': 64
     }
 
-    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_40.pt")
+    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_45.pt")
 
     model = policyNN(config).to(device)
 
@@ -111,25 +113,3 @@ if __name__ == "__main__":
     model.load_state_dict(model_weights)
     
     play_game(model=model, args=args)
-
-    #move = chess.Move.from_uci("e2e4")
-
-    #model.eval()
-
-    #ct.move_piece(move)
-
-    #print(ct.board)
-
-    #p,v = model(ct.get_representation().float().unsqueeze(0).to(device), inference=True)
-    
-    #p = p.cpu()
-
-    #valid_moves = actionsToTensor(ct.get_valid_moves(ct.board), color=chess.BLACK)[0]
-
-    #p = p*valid_moves.unsqueeze(0)
-
-    # print(p.shape)
-
-    #print(list(zip(tensorToAction(p[0], color=chess.BLACK),p[0][p[0].nonzero()].squeeze())), v)
-
-    # print(p, v)

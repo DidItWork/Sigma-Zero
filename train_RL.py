@@ -52,13 +52,13 @@ class chessDataset(Dataset):
             'rewards': rewards
         }
 
-def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_scheduler=None, start_epoch=0) -> None:
+def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_scheduler=None, start_epoch=0, logger=None, cycle=0) -> None:
     # shuffle(training_data)
     # loss = torch.zeros(1).to("cuda").requires_grad_(True)
 
     # base_model = policyNN({}).to(device)
 
-    logger = TensorBoardLogger("logs", name="supervised_15k")
+    log_step = 10
 
     for steps in range(start_epoch, total_steps):
         
@@ -83,23 +83,6 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
             v = v.squeeze(-1)
             p_target = batch["actions"].to(device)
             v_target = batch["rewards"].to(device)
-            # print(p_target.dtype, v_target.dtype)
-            # print(v, v_target)
-            # print(p[0], p_target[0])
-            # p_target = torch.reshape(p_target, (p_target.size()[0], 1))
-
-            # v_target = torch.tensor(v_target, dtype=torch.float32, device="cuda", requires_grad=True)
-            # v = torch.tensor(v, dtype=torch.float32, device="cuda", requires_grad=True)
-
-            # print(p, v)
-            # print(p_target, v_target)
-            # print(p.shape, p_target.shape)
-            # print(torch.log(p.to("cuda")).size())
-            # print(torch.pow(torch.sub(v_target, v), 2).shape, torch.sum(torch.log(p)*p_target,dim=1).shape)
-            # loss = torch.sum(torch.sub(
-            #         torch.pow(torch.sub(v_target, v), 2), 
-            #         torch.sum(torch.log(p)*p_target,dim=1)
-            # ))
 
             mse_loss = torch.nn.functional.mse_loss(v, v_target)
             print("MSE Loss", mse_loss)
@@ -109,10 +92,6 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
 
             print(f"iteration {idx}/{len(dataloader)} ce_loss {ce_loss}, mse_loss {mse_loss}")
 
-            # print(move_loss.size())
-            # if torch.any(move_loss.isnan()):
-            #     loss = torch.add(loss, move_loss)
-
             optimiser.zero_grad()
             loss.backward()
             optimiser.step()
@@ -120,95 +99,65 @@ def train(model=None, dataloader=None, optimiser=None, total_steps=0, lr_schedul
             if lr_scheduler is not None:
                 lr_scheduler.step()
         
-            logger.log_metrics({"MSE Loss":mse_loss, "CE Loss": ce_loss})
-        #Save at the end of epoch
-        # with torch.inference_mode():
-
-            # base_model.eval()
-            # model.eval()
-
-            # if update_model(current_model=base_model, new_model=model, matches=10):
-                
-                # base_model.load_state_dict(model.state_dict())
+            if idx%log_step:
+                logger.log_metrics({"MSE Loss":mse_loss, "CE Loss": ce_loss}, steps*len(dataloader)+idx)
+        
+        #Save every 5 steps
         if steps%5==0:
 
-            torch.save(model.state_dict(), f"saves/supervised_model_15k_{steps}.pt")
-            torch.save(optimiser.state_dict(), f"saves/supervised_opt_15k_{steps}.pt")
-
-                # print("new model saved!")
-
-
-    # for game_history in training_data:
-    #     # loss = torch.tensor()
-    #     for move in zip(game_history["states"], game_history["actions"], game_history["rewards"]):
-    #         p, v = self.forward(move[0].unsqueeze(0).cuda())
-    #         c = 2
-    #         print(p, v)
-    #         # print(self.parameters)
-    #         move_loss = torch.sub(
-    #             torch.pow((move[2] - v), 2), 
-    #             torch.add(
-    #                 (move[1].T * torch.log(p)), 
-    #                 (torch.mul(torch.pow(torch.abs(self.parameters), 2)), c)
-    #             )
-    #         )
-    #         print(move_loss)
-    #         print(move_loss.size())
-
-def hw():
-    print("Hello World!")
+            torch.save(model.state_dict(), f"saves/RL_960_{cycle}.pt")
+            torch.save(optimiser.state_dict(), f"saves/RL_opt_960_{cycle}.pt")
 
 def main():
+
     model = policyNN(config=dict()).to(device)
+
+    #Load Supervised Weights for self-play
+    supervised_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_45.pt")
     
-    generate_step = 10000
-    num_steps = 200000
-    num_games = 35 #210 games before epoch 6
-    num_process = 7
+    model.load_state_dict(supervised_weights)
+
+    num_games = 40
+    num_process = 2
 
     args = {
         'C': 2,
-        'num_searches': 50,
+        'num_searches': 100,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
-        'num_epochs': 4,
-        'batch_size': 64,
-        "start_epoch": 0
+        'num_epochs': 30,
+        'batch_size': 128,
+        "start_epoch": 0,
+        "chess960": True,
     }
 
-    num_searches = args["num_searches"]
-    batch_size = args["batch_size"]
+
     start_epoch = args["start_epoch"]
-    
-    # for batch in training_dataloader:
-    #     print(batch)
+    num_epochs = args["num_epochs"]
+    chess960 = args["chess960"]
+    lr_step = 500
 
     mp.set_start_method('spawn', force=True)
 
-    optimiser = Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+    optimiser = Adam(model.parameters(), lr=0.0001, weight_decay=1e-4)
 
     if start_epoch>0:
         try:
-            pretrained_weights = torch.load(f"saves/train_{num_searches}_{batch_size}_{start_epoch-1}.pt")
-            optimiser_weights = torch.load(f"saves/opt_{num_searches}_{batch_size}_{start_epoch-1}.pt", map_location=device)
+            pretrained_weights = torch.load(f"saves/RL_960_{start_epoch}.pt")
+            optimiser_weights = torch.load(f"saves/RL_960_{start_epoch}.pt", map_location=device)
             model.load_state_dict(pretrained_weights)
             optimiser.load_state_dict(optimiser_weights)
         except:
             print(f"No saved weights from epoch {start_epoch-1} found!")
             start_epoch = 0
     
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimiser, step_size=int(0.9*generate_step), gamma=0.9)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimiser, step_size=lr_step, gamma=0.95)
     
     manager = mp.Manager()
 
-    training_data = {
-        'states': [],
-        'actions': [],
-        'rewards': [],
-        'colours': [],
-    }
+    logger = TensorBoardLogger("logs", name="RL_960")
 
-    for epoch in range(start_epoch, num_steps//generate_step):
+    for epoch in range(start_epoch, num_epochs):
 
         print("Epoch", epoch)
 
@@ -224,10 +173,7 @@ def main():
 
         for i in range(num_process):
 
-            processes.append(mp.Process(target = generate_training_data, args=(model, num_games//num_process, args, return_dict)))
-
-
-        # training_data = generate_training_data(model, num_games, args)
+            processes.append(mp.Process(target = generate_training_data, args=(model, num_games//num_process, args, return_dict, chess960)))
 
         for p in processes:
             p.start()
@@ -235,17 +181,22 @@ def main():
         for p in processes:
             p.join()
 
-        # print(return_dict)
+        training_data = {
+            'states': [],
+            'actions': [],
+            'rewards': [],
+            'colours': [],
+        }
 
         for game_dict in return_dict.values():
 
             for key in training_data:
                 training_data[key] += game_dict[key]
+
+        torch.save(training_data, f"games/RL_960_{epoch}.pt")
         
         del return_dict
         del processes
-        
-        # print(training_data)
 
         training_dataset = chessDataset(training_data=training_data)
 
@@ -259,16 +210,13 @@ def main():
         model.train()
         model = model.to(device)
 
-        total_steps = generate_step//len(training_dataloader)
-
-        
-
-        train(model=model, dataloader=training_dataloader, optimiser=optimiser, total_steps=total_steps, lr_scheduler=lr_scheduler)
-
-            # print(f"Epoch {epoch} training complete")
-
-        torch.save(model.state_dict(), f"./saves/train_{num_searches}_{batch_size}_{epoch}.pt")
-        torch.save(optimiser.state_dict(), f"./saves/opt_{num_searches}_{batch_size}_{epoch}.pt")
+        train(model=model,
+              dataloader=training_dataloader,
+              optimiser=optimiser,
+              total_steps=6,
+              lr_scheduler=lr_scheduler,
+              logger=logger,
+              cycle=epoch)
 
         t2 = time.perf_counter()
 
@@ -277,6 +225,7 @@ def main():
         #clear memory
         del training_dataloader
         del training_dataset
+        del training_data
 
     print("Training complete")
     
