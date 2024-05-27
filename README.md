@@ -58,9 +58,9 @@ Start the application using Streamlit by running:
 
 ### Supervised Learning on Vanilla Chess
 
-Download >2000 ELO Player data from [FICS](https://www.ficsgames.org/download.html).
+Download >2000 ELO Player data for Standard Chess (Blitz and Lightning Chess data will contain non-optimal moves) from [FICS](https://www.ficsgames.org/download.html).
 
-Place the downloaded `.pgn.bz2` in the a `saves` folder
+Place the downloaded `.pgn.bz2` in the a `saves` folder and set the file path as well as the number of games to generate in `generate_training_supervised.py`
 
 ```
 python generate_training_supervised.py
