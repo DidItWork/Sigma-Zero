@@ -90,11 +90,3 @@ class PlayTensor():
             f.write(svg)
 
         return True
-        
-
-
-    # def undo_move(self):
-    #     """ Undo a move """
-    #     # NOTE: We undo the move twice because the AI also played a move
-    #     self.game.undo_move()
-    #     self.game.undo_move()

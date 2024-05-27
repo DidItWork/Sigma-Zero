@@ -39,9 +39,6 @@ class MCTS0:
     @torch.no_grad()
     def search(self, state, verbose=True, learning=False):
 
-        #Set model to evaluation mode
-        self.model.eval()
-
         # Define root node
         root = Node(self.game, self.args, state, color=chess.WHITE if state.turn else chess.BLACK)
 
@@ -71,8 +68,6 @@ class MCTS0:
                 valid_moves = node.game.get_valid_moves(node.game.board)
 
                 policy_mask, queen_promotion = actionsToTensor(valid_moves, node.color)
-
-                policy_mask = policy_mask
                 
                 policy, value = self.model(
                     node.game.get_representation().float().unsqueeze(0).to(device),
@@ -85,9 +80,9 @@ class MCTS0:
 
                 policy = policy.squeeze(0)
 
-                node.value = value.item()
+                # print("board value", node.color, node.game.board, value)
 
-                # t2_2 = time.perf_counter()
+                node.value = value.item()
 
                 valid_moves = tensorToAction(policy, node.color, queen_promotion=queen_promotion)
 
