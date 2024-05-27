@@ -27,23 +27,24 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 @torch.no_grad()
 def play_game(model, args):
     """
-    Simulates a single game of chess, with the AI playing against itself.
-    Returns the game history, including states, actions, and rewards.
+    Test AI model by playing against it or playing StockFish against it.
     """
     board = chess.Board()
     chess_tensor = ChessTensor()
+
+    model.eval()
     
     while not board.is_game_over():
 
-        print(board)
-
         if board.turn:
 
-            #Uncomment for user play
+            #####Uncomment for user play#####
 
             # move = input("Please enter move: ")
 
             # best_move = chess.Move.from_uci(move.strip())
+
+            #####Uncomment for SF AI play#####
 
             engine = chess.engine.SimpleEngine.popen_uci("/home/benluo/school/Sigma-Zero/stockfish/stockfish-ubuntu-x86-64-avx2")
             
@@ -54,8 +55,6 @@ def play_game(model, args):
             result = engine.play(board, limit)
 
             best_move = result.move
-
-            # time.sleep(1)
         
         else:
 
@@ -65,7 +64,7 @@ def play_game(model, args):
         
             action_probs = mcts.search(board, verbose=False, learning=False)
 
-            print(action_probs)
+            # print(action_probs)
 
             t2 = time.perf_counter()
 
@@ -73,7 +72,9 @@ def play_game(model, args):
 
             print("Search Time", t2-t1)
 
-        print("Board", chess_tensor.board.turn)
+        print("Board", "White" if chess_tensor.board.turn else "Black", model(chess_tensor.get_representation().float().unsqueeze(0).to(device))[-1].item())
+
+        print(chess_tensor.board)
 
         board.push(best_move)
         
@@ -97,14 +98,14 @@ if __name__ == "__main__":
     config = dict()
     args = {
         'C': 2,
-        'num_searches': 10,
+        'num_searches': 800,
         'num_iterations': 3,
         'num_selfPlay_iterations': 500,
         'num_epochs': 4, 
         'batch_size': 64
     }
 
-    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model_15k_45.pt")
+    model_weights = torch.load("/home/benluo/school/Sigma-Zero/saves/supervised_model_max_best_hlr.pt")
 
     model = policyNN(config).to(device)
 

@@ -14,7 +14,7 @@ class PlayTensor():
         config = dict()
         self.args = {
             'C': 2,
-            'num_searches': 2,
+            'num_searches': 200,
             'num_iterations': 3,
             'num_selfPlay_iterations': 500,
             'num_epochs': 4, 
@@ -22,8 +22,8 @@ class PlayTensor():
         }
 
         # CHANGGEGEEEEEEEE TODO TODO change path and map location
-        model_weights = torch.load("./saves/supervised_model_15k_45.pt", map_location=torch.device('cpu'))
-        print(model_weights.keys())
+        model_weights = torch.load("supervised_model_best.pt", map_location=torch.device('cpu'))
+        # print(model_weights.keys())
         self.model = policyNN(config)
         self.model.load_state_dict(model_weights)
 
@@ -90,11 +90,3 @@ class PlayTensor():
             f.write(svg)
 
         return True
-        
-
-
-    # def undo_move(self):
-    #     """ Undo a move """
-    #     # NOTE: We undo the move twice because the AI also played a move
-    #     self.game.undo_move()
-    #     self.game.undo_move()

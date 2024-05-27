@@ -35,16 +35,18 @@ def play_game(model, args):
     # level_num: (skill_level, time_limit, depth_limit)  
     # 2: (3, 0.02, 5) old model lost to this initial setting roughly 1.5k elo
     # 
-    level = {1: (0, 1, 5),
-             2: (1, 1, 5),
-             3: (2, 1, 5),
-             4: (3, 1, 5),
+
+    level = {1: (3, 1, 5),
+             2: (4, 1, 5),
+             3: (5, 1, 5),
+             4: (6, 1, 5),
              5: (7, 1, 5),
              6: (8, 1, 6),
              7: (9, 2, 7),
              8: (20, 10, 50)}
 
     level_reached = 1
+
     while True:
         # track the score for this level
         model_score = 0
@@ -73,15 +75,13 @@ def play_game(model, args):
 
                 if (turn % 2 == 0 and sf_white) or (turn % 2 == 1 and not sf_white):
 
-                    # move = input("Please enter move: ")
-
-                    # best_move = chess.Move.from_uci(move.strip())
-
                     limit = chess.engine.Limit(time=time_limit, depth=depth_limit)
 
                     result = engine.play(board, limit)
 
                     best_move = result.move
+
+                    print(best_move)
 
                     time.sleep(1)
                 
@@ -152,9 +152,9 @@ if __name__ == "__main__":
         'num_selfPlay_iterations': 500,
         'num_epochs': 4, 
         'batch_size': 64,
-        'chess960': True
+        'chess960': False
     } 
-    model_path = "/home/benluo/school/Sigma-Zero/saves/RL_960_5.pt"
+    model_path = "/home/benluo/school/Sigma-Zero/saves/supervised_model_max_best_hlr.pt"
 
     start_time = time.time()
 
@@ -167,6 +167,8 @@ if __name__ == "__main__":
     model = policyNN(config).to(device)
 
     model.load_state_dict(model_weights)
+
+    model.eval()
     
     level_reached = play_game(model=model, args=args)
 

@@ -15,21 +15,16 @@ Create the Conda environment using the following command:
 conda env create -f environment.yml
 ```
 
-If pytorch does not work, try reinstalling it via the following from [pytorch](https://pytorch.org/)
-
-```
-conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
-```
-
-Install required packages
-```
-pip install -r requirements.txt
-```
-
 Activate environment
 
 ```
 conda activate sigmazero
+```
+
+If pytorch does not work, try reinstalling it via the following from [pytorch](https://pytorch.org/)
+
+```
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 ```
 
 ## Setting up Graphical User Interface (GUI)
@@ -58,9 +53,9 @@ Start the application using Streamlit by running:
 
 ### Supervised Learning on Vanilla Chess
 
-Download >2000 ELO Player data from [FICS](https://www.ficsgames.org/download.html).
+Download >2000 ELO Player data for Standard Chess (Blitz and Lightning Chess data will contain non-optimal moves) from [FICS](https://www.ficsgames.org/download.html).
 
-Place the downloaded `.pgn.bz2` in the a `saves` folder
+Place the downloaded `.pgn.bz2` in the a `saves` folder and set the file path as well as the number of games to generate in `generate_training_supervised.py`
 
 ```
 python generate_training_supervised.py
@@ -99,7 +94,7 @@ args = {
 
 We test our models against each level of Stockfish in a best of 5 format, results can be found in `logs/log.txt`. You can load your model weights and the path to your Stockfish engine in `eval.py`
 
-You can download the model weights [here](https://sutdapac-my.sharepoint.com/:f:/g/personal/benjamin_luo_mymail_sutd_edu_sg/EmlUJ6kaxjdKmSseXeqKeXEB_oO8OFYyYRJvr4W63ibw0A?e=fvN6vI).
+You can download the model weights [here](supervised_model_best.pt).
 
 ```
 python eval.py
@@ -107,19 +102,41 @@ python eval.py
 
 ## Results
 
-Our network was trained on 15000 >2000 ELO Player data for 60 epochs and the best results are shown in the table below.
+Our network was trained on 15000 >2000 ELO Standard Chess data for 60 epochs and the best results are shown in the table below.
 
 The results are obtained from best of 5 games against different levels of Stockfish, a win is awarded 1 point and a draw is awarded 0.5 point. The Sigmazero AI and Stockfish will take turns to play White and Sigmazero will advance to the next level if it gets 2.5 points or more
 
-![sf_levels](/images/sf_levels.png)
+| StockFish Skill Level | Time Limit | Search Depth | Estimated ELO |
+|-----------------------|------------|--------------|---------------|
+| 0                     | 1          | 5            | 1376          |
+| 1                     | 1          | 5            | 1462          |
+| 2                     | 1          | 5            | 1547          |
+| 3                     | 1          | 5            | 1596          |
+| 4                     | 1          | 5            | 1718          |
+| 5                     | 1          | 5            | 1804          |
+| 6                     | 1          | 5            | 1993          |
+| 7                     | 1          | 5            | 2012          |
+| 8                     | 1          | 6            | 2127          |
+| 9                     | 2          | 7            | 2270          |
+| 20                    | 10         | 50           | 3100          |
 
 ### Vanilla Chess
 
-![vanilla_chess](/images/vanilla_chess.png)
+| Model          | MCTS Simulations | SF Level | Estimated ELO | Model Win | Model Loss | Model Draw | Games | Score |
+|----------------|------------------|----------|---------------|-----------|------------|------------|-------|-------|
+| 48k_supervised | 800              | 3        | 1596          | 3         | 1          | 0          | WLWW  | 3.0   |
+| 48k_supervised | 800              | 4        | 1718          | 3         | 0          | 0          | WWW   | 3.0   |
+| 48k_supervised | 800              | 5        | 1804          | 2         | 0          | 1          | DWW   | 2.5   |
+| 48k_supervised | 800              | 6        | 1993          | 2         | 0          | 1          | DWW   | 2.5   |
+| 48k_supervised | 800              | 7        | 2012          | 3         | 1          | 0          | WLWW  | 3.0   |
+| 48k_supervised | 800              | 8        | 2127          | 2         | 1          | 1          | WLDW  | 2.5   |
+| 48k_supervised | 800              | 9        | 2270          | 0         | 3          | 2          | LDLDL | 1.0   |
 
 ### Chess 960
 
-![chess_960](/images/chess_960.png)
+*Coming Soon*
+
+<!-- ![chess_960](/images/chess_960.png) -->
 
 ## Logic
 

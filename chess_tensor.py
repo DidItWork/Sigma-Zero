@@ -32,10 +32,7 @@ class ChessTensor():
         self.M = 14
         self.T = 8
         self.L = 7
-        if chess960:
-            self.__start_board(chess960=True)
-        else:
-            self.__start_board()
+        self.start_board(chess960=chess960)
 
     # This is to get a single tensor representation of the board
     def __board_to_tensor(self, board) -> torch.Tensor:
@@ -50,7 +47,7 @@ class ChessTensor():
         }
 
         # 6 white + 6 black
-        representation = torch.zeros(12, 8, 8, dtype=torch.int16)   
+        representation = torch.zeros(12, 8, 8, dtype=torch.bool)   
 
         for square in chess.SQUARES:
             piece = board.piece_at(square)
@@ -65,7 +62,7 @@ class ChessTensor():
 
         return representation
 
-    def __start_board(self, chess960=False):
+    def start_board(self, chess960=False):
         """ Initialize the board as a tensor """
         if chess960:
             print('Starting chess960')
@@ -75,18 +72,18 @@ class ChessTensor():
 
         # Get board current state
         board_tensor = self.__board_to_tensor(self.board)
-        repetition_tensor = torch.zeros(2, 8, 8, dtype=torch.int16)
+        repetition_tensor = torch.zeros(2, 8, 8, dtype=torch.bool)
         current_representation = torch.cat([board_tensor, repetition_tensor], 0)
 
         # Adding L channel
-        white = torch.ones(1, 8, 8, dtype=torch.int16)
-        black = torch.zeros(1, 8, 8, dtype=torch.int16)
-        total_moves = torch.zeros(1, 8, 8, dtype=torch.int16)
-        castling = torch.ones(4,8,8, dtype=torch.int16)
-        no_progress = torch.zeros(1, 8, 8, dtype=torch.int16)
+        white = torch.ones(1, 8, 8, dtype=torch.bool)
+        black = torch.zeros(1, 8, 8, dtype=torch.bool)
+        total_moves = torch.zeros(1, 8, 8, dtype=torch.bool)
+        castling = torch.ones(4,8,8, dtype=torch.bool)
+        no_progress = torch.zeros(1, 8, 8, dtype=torch.bool)
 
-        self.representation = torch.cat([current_representation, torch.zeros(self.M * (self.T - 1), 8, 8, dtype=torch.int16), white, total_moves, castling, no_progress], 0)
-        self.black_representation = torch.cat([current_representation[6:12], current_representation[:6], repetition_tensor, torch.zeros(self.M * (self.T - 1), 8, 8, dtype=torch.int16), black, total_moves, castling, no_progress], 0)
+        self.representation = torch.cat([current_representation, torch.zeros(self.M * (self.T - 1), 8, 8, dtype=torch.bool), white, total_moves, castling, no_progress], 0)
+        self.black_representation = torch.cat([current_representation[6:12], current_representation[:6], repetition_tensor, torch.zeros(self.M * (self.T - 1), 8, 8, dtype=torch.bool), black, total_moves, castling, no_progress], 0)
     
     def move_piece(self, move: chess.Move) -> torch.Tensor:
         """ Move a piece on the board """
@@ -101,26 +98,24 @@ class ChessTensor():
         board_tensor = self.__board_to_tensor(self.board)
 
         # Add repetition tensor
-        repetition_1 = self.board.is_repetition(1)
-        repetition_2 = self.board.is_repetition(2)
+        repetition_1 = self.board.is_repetition(2)
+        repetition_2 = self.board.is_repetition(3)
 
-        repetition_1_tensor = torch.ones(1, 8, 8, dtype=torch.int16) if repetition_1 else torch.zeros(1, 8, 8, dtype=torch.int16)
-        repetition_2_tensor = torch.ones(1, 8, 8, dtype=torch.int16) if repetition_2 else torch.zeros(1, 8, 8, dtype=torch.int16)
+        repetition_1_tensor = torch.ones(1, 8, 8, dtype=torch.bool) if repetition_1 else torch.zeros(1, 8, 8, dtype=torch.bool)
+        repetition_2_tensor = torch.ones(1, 8, 8, dtype=torch.bool) if repetition_2 else torch.zeros(1, 8, 8, dtype=torch.bool)
 
         # Get current tensor
         current_tensor = torch.cat([board_tensor, repetition_1_tensor, repetition_2_tensor], 0)
         
         # Adding L channel
-        white =  torch.ones(1, 8, 8, dtype=torch.int16)
-        black = torch.zeros(1, 8, 8, dtype=torch.int16)
-        total_moves = torch.tensor([len(self.board.move_stack)], dtype=torch.int16).reshape(1, 1, 1).expand(1, 8, 8)
-        white_king_castling = torch.ones(1, 8, 8, dtype=torch.int16) if self.board.has_kingside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8, dtype=torch.int16)
-        white_queen_castling = torch.ones(1, 8, 8, dtype=torch.int16) if self.board.has_queenside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8, dtype=torch.int16)
-        black_king_castling = torch.ones(1, 8, 8, dtype=torch.int16) if self.board.has_kingside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8, dtype=torch.int16)
-        black_queen_castling = torch.ones(1, 8, 8, dtype=torch.int16) if self.board.has_queenside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8, dtype=torch.int16)
-        no_progress = torch.tensor([self.board.halfmove_clock], dtype=torch.int16).reshape(1, 1, 1).expand(1, 8, 8)
-
-        # print("move clock", self.board.halfmove_clock)
+        white =  torch.ones(1, 8, 8, dtype=torch.bool)
+        black = torch.zeros(1, 8, 8, dtype=torch.bool)
+        total_moves = torch.tensor([len(self.board.move_stack)], dtype=torch.bool).reshape(1, 1, 1).expand(1, 8, 8)
+        white_king_castling = torch.ones(1, 8, 8, dtype=torch.bool) if self.board.has_kingside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8, dtype=torch.bool)
+        white_queen_castling = torch.ones(1, 8, 8, dtype=torch.bool) if self.board.has_queenside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8, dtype=torch.bool)
+        black_king_castling = torch.ones(1, 8, 8, dtype=torch.bool) if self.board.has_kingside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8, dtype=torch.bool)
+        black_queen_castling = torch.ones(1, 8, 8, dtype=torch.bool) if self.board.has_queenside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8, dtype=torch.bool)
+        no_progress = torch.tensor([self.board.halfmove_clock], dtype=torch.bool).reshape(1, 1, 1).expand(1, 8, 8)
 
         L_tensor = torch.cat([white, total_moves, white_king_castling, white_queen_castling, black_king_castling, black_queen_castling, no_progress], 0)
         L_tensor_black = torch.cat([black, total_moves, black_king_castling, black_queen_castling, white_king_castling, white_queen_castling, no_progress], 0)
@@ -132,77 +127,15 @@ class ChessTensor():
         # Combining all tensors
         self.representation = torch.cat([current_tensor, self.representation, L_tensor], 0)
         self.black_representation = torch.cat([current_tensor[6:12], current_tensor[:6], current_tensor[12:], self.black_representation, L_tensor_black], 0)
-
-    # def undo_move(self) -> torch.Tensor:
-    #     """" Undo the last half-move """
-    #     self.board.pop()
-
-    #     # Remove first M channels
-    #     self.representation = self.representation[self.M:]
-
-    #     # Regenerate lost tensor
-    #     old_tensor = self.__get_past_board_tensor(self.board)
-
-    #     # Regenerate old L tensor
-    #     color = torch.zeros(1, 8, 8) if self.board.turn else torch.ones(1, 8, 8) # 0 means white, 1 means black
-    #     total_moves = torch.Tensor([len(self.board.move_stack)]).reshape(1, 1, 1).expand(1, 8, 8)
-    #     white_king_castling = torch.ones(1, 8, 8) if self.board.has_kingside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8)
-    #     white_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.WHITE) else torch.zeros(1, 8, 8)
-    #     black_king_castling = torch.ones(1, 8, 8) if self.board.has_kingside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
-    #     black_queen_castling = torch.ones(1, 8, 8) if self.board.has_queenside_castling_rights(chess.BLACK) else torch.zeros(1, 8, 8)
-    #     no_progress = torch.Tensor([self.board.halfmove_clock]).reshape(1, 1, 1).expand(1, 8, 8)
-
-    #     L_tensor = torch.cat([color, total_moves, white_king_castling, white_queen_castling, black_king_castling, black_queen_castling, no_progress], 0)
-
-    #     # Remove last L channels
-    #     self.representation = self.representation[:-self.L]
-
-    #     # Add representation at the back
-    #     self.representation = torch.cat([self.representation, old_tensor, L_tensor], 0)
-        
-    # # Function to temporarily get the board state N moves ago, then restore the current state
-    # def __get_past_board_tensor(self, board: chess.Board) -> torch.Tensor:
-    #     """ Get the board state N moves ago """
-    #     # Make sure n does not exceed the current move count
-    #     n = self.T - 1
-    #     n = min(n, len(board.move_stack))
-        
-    #     # Create a copy of the board for manipulation
-    #     temp_board = board.copy()
-        
-    #     # Pop N moves to get the board state N moves ago
-    #     for _ in range(n):
-    #         temp_board.pop()
-
-    #     temp_tensor = self.__board_to_tensor(temp_board)
-        
-    #     repetition1 = False
-    #     repetition2 = False
-
-    #     # Get repetition tensor
-    #     n = min(self.T, len(temp_board.move_stack))
-    #     for _ in range(n):
-    #         temp_board.pop()
-    #         old_tensor = self.__board_to_tensor(temp_board)
-
-    #         if torch.all(old_tensor == temp_tensor):
-    #             if repetition1:
-    #                 repetition2 = True
-    #             else:
-    #                 repetition1 = True
-
-
-    #     repetition_1_tensor = torch.ones(1, 8, 8) if repetition1 else torch.zeros(1, 8, 8)
-    #     repetition_2_tensor = torch.ones(1, 8, 8) if repetition2 else torch.zeros(1, 8, 8)
-
-    #     return torch.cat([temp_tensor, repetition_1_tensor, repetition_2_tensor], 0)
-
         
     def get_representation(self) -> torch.Tensor:
         """ Get the current board representation in the player's perspective """
+        
         # For white representation
         if self.board.turn:
+
             return torch.flip(self.representation, [1])
+        
         else:
 
             # Flipping the board for black
@@ -222,20 +155,20 @@ class ChessTensor():
         return state
     
     def get_valid_moves(self ,state):
-        # print("get valid moves", state)
         return list(state.legal_moves)
 
     def get_value_and_terminated(self):
         if self.board.is_game_over():
             winner = self.board.outcome().winner
-            # print(winner, self.board.turn)
-            # print(self.board)
+
             if winner == None:
                 #Draw
                 return 0, True
             else:
+                #Someone won
                 return -1, True
 
+        #Game has not ended
         return 0, False
     
     def get_opponent(self, player):
@@ -253,15 +186,14 @@ class ChessTensor():
         ).astype(np.float32)
 
         return encoded_state
-    
-    
+
 def actionsToTensor(valid_moves:Union[List[chess.Move], Dict[chess.Move, float]], color=chess.WHITE) -> torch.tensor:
     """
     Returns a vector mask of valid actions
     """
 
     #Initialize empty action tensor
-    actionTensor = torch.zeros(73*8*8)
+    actionTensor = torch.zeros(8*8*73)
     queen_promotion = dict()
 
     if type(valid_moves) == dict:
@@ -281,9 +213,6 @@ def actionsToTensor(valid_moves:Union[List[chess.Move], Dict[chess.Move, float]]
         else:
             prob = 1
 
-        # print(valid_move)
-        # print(actionToTensor(valid_move).nonzero())
-        # print(tensorToAction(actionToTensor(valid_move)))
         actionTensor += actionToTensor(valid_move, color, prob=prob)
     
     return actionTensor, queen_promotion
@@ -291,7 +220,7 @@ def actionsToTensor(valid_moves:Union[List[chess.Move], Dict[chess.Move, float]]
 
 def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE, prob:float=1) -> torch.tensor:
 
-    moveTensor = torch.zeros(8*8*73, requires_grad=False)
+    moveTensor = torch.zeros(8*8*73)
 
     dir = {
         (0,-1) : 0,
@@ -305,14 +234,14 @@ def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE, prob:float=1)
     }
 
     knight_moves = {
-        (1,-2) : 0, #0
-        (2,-1) : 1, #1
-        (2,1) : 2, #2
-        (1,2) : 3, #3
-        (-1,2) : 4, #4
-        (-2,1) : 5, #5
-        (-2,-1) : 6, #6
-        (-1,-2) : 7, #7
+        (1,-2) : 0,
+        (2,-1) : 1,
+        (2,1) : 2,
+        (1,2) : 3,
+        (-1,2) : 4,
+        (-2,1) : 5,
+        (-2,-1) : 6,
+        (-1,-2) : 7,
     }
 
     def check_polarity(val) -> int:
@@ -338,8 +267,6 @@ def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE, prob:float=1)
         toRow = to_square//8
         toCol = 7-to_square%8
     
-    # print(move, row, toRow, col, toCol)
-    
     #Queen Move
     if toCol == col or toRow == row or abs(toRow-row)/abs(toCol-col)==1:
 
@@ -355,13 +282,11 @@ def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE, prob:float=1)
                 #Right Diagonal Capture
                 i+=1
                 
-            
             elif toCol<col:
 
                 #Left Diagonal Capture
                 i+=2
             
-
             moveTensor[(64+i)*8*8+row*8+col] = prob
 
         else:
@@ -369,8 +294,6 @@ def actionToTensor(move:chess.Move, color:chess.Color=chess.WHITE, prob:float=1)
             squares = max(abs(toRow-row), abs(toCol-col))
 
             direction = (check_polarity(toCol-col), check_polarity(toRow-row))
-
-            # print(squares, direction)
 
             moveTensor[(dir[direction]*7+(squares-1))*64+row*8+col] = prob
 
@@ -390,8 +313,6 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE, queen_prom
     moves = moves.nonzero()
 
     chess_moves = []
-
-    # move = int(torch.argmax(moves).item())
 
     lettering = "abcdefgh"
     numbering = "12345678"
@@ -427,8 +348,6 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE, queen_prom
     ]
 
     for move in moves:
-
-        # print(move)
 
         #check plane of move
         plane = move//64
@@ -495,12 +414,23 @@ def tensorToAction(moves:torch.tensor, color:chess.Color=chess.WHITE, queen_prom
 
 if __name__=="__main__":
 
-    action = chess.Move.from_uci("e7e8n")
+    action = chess.Move.from_uci("d1d6")
 
     action2 = chess.Move.from_uci("e2d1r")
 
-    at = actionToTensor(action,chess.BLACK)
+    at = actionToTensor(action,True)
 
     at2 = actionToTensor(action2,chess.BLACK)
 
-    print(tensorToAction(at2,chess.BLACK, dict({action.uci():True, action2.uci():True})))
+    atensor = torch.ones(4672)
+
+    move_set = tensorToAction(atensor)
+
+    move_set = set(move_set)
+
+    print(move_set)
+    print(len(move_set))
+
+    print(tensorToAction(at, True))
+
+    # print(tensorToAction(at2,chess.BLACK, dict({action.uci():True, action2.uci():True})))

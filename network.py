@@ -72,6 +72,7 @@ class BasicBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
+        # out = self.relu(out)
 
         if self.downsample is not None:
             identity = self.downsample(x)
@@ -105,28 +106,33 @@ class policyNN(nn.Module):
         self.norm_layer = nn.BatchNorm2d(256)
 
         self.conv_p1 = nn.Conv2d(256, 256, kernel_size=1, bias=False)
+        self.p_norm1 = nn.BatchNorm2d(256)
         self.conv_p2 = nn.Conv2d(256, 73, kernel_size=1)
-        self.p_norm = nn.BatchNorm2d(73)
+        # self.p_norm2 = nn.BatchNorm2d(73)
 
         self.conv_v1 = nn.Conv2d(256, 1, kernel_size=1, bias=False)
         self.v_norm = nn.BatchNorm2d(1)
         self.fc_v1 = nn.Linear(64, 256)
+        # self.fc_norm1 = nn.BatchNorm1d(256)
         self.fc_v2 = nn.Linear(256, 1)
+        # self.fc_norm2 = nn.BatchNorm1d(1)
 
         self.resnet_blocks = []
 
-        dp = config.get("dropout", 0.)
+        # dp = config.get("dropout", 0.)
 
-        v_dp = config.get("value dropout", 0.)
-        p_dp = config.get("policy dropout", 0.)
+        # v_dp = config.get("value dropout", 0.)
+        # p_dp = config.get("policy dropout", 0.)
 
-        self.v_do = nn.Dropout(p=v_dp)
-        self.p_do = nn.Dropout(p=p_dp)
+        # self.conv_do = nn.Dropout(p=dp)
 
-        for _ in range(19):
+        # self.v_do = nn.Dropout(p=v_dp)
+        # self.p_do = nn.Dropout(p=p_dp)
 
-            self.resnet_blocks.append(BasicBlock(256, 256, 1))
-            self.resnet_blocks.append(nn.Dropout(p=dp))
+        for _ in range(19): #19
+
+            self.resnet_blocks.append(BasicBlock(256, 256))
+            # self.resnet_blocks.append(self.conv_do)
 
         self.resnet_blocks = nn.Sequential(*self.resnet_blocks)
 
@@ -135,13 +141,14 @@ class policyNN(nn.Module):
     def policy_head(self, x: tensor) -> tensor:
 
         x = self.conv_p1(x)
+        x = self.p_norm1(x)
         x = nn.ReLU()(x)
 
-        x = self.p_do(x)
+        # x = self.p_do(x)
 
         x = self.conv_p2(x)
-        x = self.p_norm(x)
-        x = nn.ReLU()(x)
+        # x = self.p_norm2(x)
+        # x = nn.ReLU()(x)
         x = torch.flatten(x, start_dim=1)
 
         return x
@@ -154,12 +161,14 @@ class policyNN(nn.Module):
 
         x = torch.flatten(x, start_dim=1)
 
+        # x = self.v_do(x)
+
         x = self.fc_v1(x)
+        # x = self.fc_norm1(x)
         x = nn.ReLU()(x)
 
-        x = self.v_do(x)
-
         x = self.fc_v2(x)
+        # x = self.fc_norm2(x)
         x = torch.tanh(x)
 
         return x   
@@ -169,6 +178,8 @@ class policyNN(nn.Module):
         x = self.conv1(x)
         x = self.norm_layer(x)
         x = nn.ReLU()(x)
+
+        # x = self.conv_do(x)
 
         x = self.resnet_blocks(x)
 
@@ -190,7 +201,7 @@ if __name__=="__main__":
 
     game = ChessTensor()
 
-    board = game.get_representation().unsqueeze(0).to(device)
+    board = game.get_representation().unsqueeze(0).to(device).float()
 
     policy, value = network(board)
 
