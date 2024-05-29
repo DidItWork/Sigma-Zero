@@ -1,5 +1,5 @@
 # SigmaZero
-An implementation of Supervised and Reinforcement Learning in game-playing according to Alpha Zero
+A PyTorch implementation of Supervised and Reinforcement Learning in game-playing according to Alpha Zero
 
 ## Environment Setup
 
